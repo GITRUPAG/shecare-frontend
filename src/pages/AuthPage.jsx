@@ -17,7 +17,7 @@ const C = {
   border:     "#E8D0F0",
 };
 
-const API_BASE = "http://localhost:8080";
+const API_BASE = "https://shecare-backend-1061624847334.asia-south1.run.app";
 
 async function apiLogin(identifier, password) {
   const res = await fetch(`${API_BASE}/auth/login`, {
