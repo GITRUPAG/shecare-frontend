@@ -1,7 +1,7 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect} from "react";
 import { useNavigate } from "react-router-dom";
 import { AppShell } from "../components/Layout";
-import { predictPCOS, getLatestPrediction, getPeriodPrediction } from "../api/periodService";
+import { predictPCOS, getPeriodPrediction } from "../api/periodService";
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
 const C = {
@@ -277,7 +277,7 @@ export default function PCOSPage() {
         setView("landing");
       }
     })();
-  }, []);
+  }, [currentUser]);
 
   function buildAutoPayload(pred, user) {
     // Use profile BMI if stored, otherwise 22 (healthy default)

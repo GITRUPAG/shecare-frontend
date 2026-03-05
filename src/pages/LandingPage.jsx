@@ -19,21 +19,21 @@ function LottiePlayer({ animData, style, loop = true, autoplay = true }) {
       animationData: animData,
     });
     return () => animRef.current && animRef.current.destroy();
-  }, [animData]);
+  }, [animData, loop, autoplay]);
 
   return <div ref={ref} style={style} />;
 }
 
 const S = {
-  h1: { fontFamily: "\'Cormorant Garamond\', serif", fontSize: "clamp(52px, 8vw, 88px)", fontWeight: 700, lineHeight: 1.0, letterSpacing: "-1.5px", color: "#2D1040" },
-  h2: { fontFamily: "\'Cormorant Garamond\', serif", fontSize: "clamp(36px, 5vw, 56px)", fontWeight: 700, lineHeight: 1.1, letterSpacing: "-0.5px", color: "#2D1040" },
-  h3: { fontFamily: "\'Cormorant Garamond\', serif", fontSize: 24, fontWeight: 700, color: "#2D1040" },
-  body: { fontFamily: "\'Nunito\', sans-serif", color: "#603377" },
+  h1: { fontFamily: "Cormorant Garamond, serif", fontSize: "clamp(52px, 8vw, 88px)", fontWeight: 700, lineHeight: 1.0, letterSpacing: "-1.5px", color: "#2D1040" },
+  h2: { fontFamily: "Cormorant Garamond, serif", fontSize: "clamp(36px, 5vw, 56px)", fontWeight: 700, lineHeight: 1.1, letterSpacing: "-0.5px", color: "#2D1040" },
+  h3: { fontFamily: "Cormorant Garamond, serif", fontSize: 24, fontWeight: 700, color: "#2D1040" },
+  body: { fontFamily: "Nunito, sans-serif", color: "#603377" },
   btnPrimary: {
     background: "linear-gradient(135deg, #D85E82, #A8356A)",
     color: "white", border: "none", borderRadius: 50,
     padding: "15px 36px", fontSize: 15, fontWeight: 700,
-    cursor: "pointer", fontFamily: "\'Nunito\', sans-serif",
+    cursor: "pointer", fontFamily: "Nunito, sans-serif",
     boxShadow: "0 6px 24px rgba(216,94,130,0.40)",
     transition: "all 0.25s", letterSpacing: "0.2px",
   },
@@ -42,12 +42,12 @@ const S = {
     color: "#D85E82", border: "2px solid #E8A8BE",
     borderRadius: 50, padding: "13px 34px",
     fontSize: 15, fontWeight: 700, cursor: "pointer",
-    fontFamily: "\'Nunito\', sans-serif", transition: "all 0.25s",
+    fontFamily: "Nunito, sans-serif", transition: "all 0.25s",
   },
   tag: {
     display: "inline-block",
     background: "#F3E6EE", color: "#80468E",
-    fontSize: 11, fontWeight: 800, fontFamily: "\'Nunito\', sans-serif",
+    fontSize: 11, fontWeight: 800, fontFamily: "Nunito, sans-serif",
     padding: "4px 12px", borderRadius: 20, letterSpacing: "1px",
     textTransform: "uppercase",
   },
@@ -70,9 +70,9 @@ const PHASES = [
 ];
 
 const TESTIMONIALS = [
-  { name: "Priya R.",   loc: "Mumbai",    stars: 5, text: "SheCare\'s PCOS alert pushed me to finally see a doctor. Got diagnosed early — this app may have changed my life.", tag: "PCOS" },
-  { name: "Shreya M.",  loc: "Bangalore", stars: 5, text: "I used to think I was just \'moody.\' Understanding my luteal phase changed everything. Now I plan around my cycle.", tag: "Cycle Tracking" },
-  { name: "Kavya T.",   loc: "Chennai",   stars: 5, text: "The community here is everything. Anonymous, warm, and genuinely supportive in ways I didn\'t expect.", tag: "Community" },
+  { name: "Priya R.",   loc: "Mumbai",    stars: 5, text: "SheCare's PCOS alert pushed me to finally see a doctor. Got diagnosed early — this app may have changed my life.", tag: "PCOS" },
+  { name: "Shreya M.",  loc: "Bangalore", stars: 5, text: "I used to think I was just moody. Understanding my luteal phase changed everything. Now I plan around my cycle.", tag: "Cycle Tracking" },
+  { name: "Kavya T.",   loc: "Chennai",   stars: 5, text: "The community here is everything. Anonymous, warm, and genuinely supportive in ways I didn't expect.", tag: "Community" },
 ];
 
 export default function LandingPage() {
@@ -100,7 +100,7 @@ export default function LandingPage() {
   return (
     <div style={{ background: "#FFFFFF", overflowX: "hidden" }}>
       {/* Fonts */}
-      <style>{`@import url(\'https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,700;1,400;1,700&family=Nunito:wght@400;600;700;800&display=swap\');`}</style>
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,700;1,400;1,700&family=Nunito:wght@400;600;700;800&display=swap');`}</style>
 
       {/* NAV */}
       <nav style={{
@@ -138,7 +138,7 @@ export default function LandingPage() {
           <div>
             <div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "white", border: "1px solid #E8A8BE", borderRadius: 50, padding: "8px 18px", marginBottom: 28, boxShadow: "0 4px 16px rgba(216,94,130,0.18)" }}>
               <span style={{ fontSize: 13 }}>🚀</span>
-              <span style={{ fontFamily: "\'Nunito\', sans-serif", fontSize: 12, fontWeight: 800, color: "#80468E", letterSpacing: "0.8px", textTransform: "uppercase" }}>Launching March 8 · International Women\'s Day</span>
+              <span style={{ fontFamily: "Nunito, sans-serif", fontSize: 12, fontWeight: 800, color: "#80468E", letterSpacing: "0.8px", textTransform: "uppercase" }}>Launching March 8 · International Women\'s Day</span>
             </div>
             <h1 style={{ ...S.h1, marginBottom: 12 }}>
               Your Body,<br />
@@ -172,18 +172,18 @@ export default function LandingPage() {
             }
             {/* Floating badge */}
             <div style={{ position: "absolute", top: 20, right: 0, background: "linear-gradient(135deg, #D85E82, #80468E)", borderRadius: 16, padding: "10px 16px", boxShadow: "0 8px 24px rgba(216,94,130,0.45)", color: "white" }}>
-              <p style={{ fontFamily: "\'Nunito\', sans-serif", fontSize: 10, fontWeight: 800, letterSpacing: "0.8px", textTransform: "uppercase", opacity: 0.85, margin: 0 }}>AI Powered</p>
-              <p style={{ fontFamily: "\'Cormorant Garamond\', serif", fontSize: 22, fontWeight: 700, lineHeight: 1, margin: 0 }}>94% Accuracy</p>
+              <p style={{ fontFamily: "Nunito, sans-serif", fontSize: 10, fontWeight: 800, letterSpacing: "0.8px", textTransform: "uppercase", opacity: 0.85, margin: 0 }}>AI Powered</p>
+              <p style={{ fontFamily: "Cormorant Garamond, serif", fontSize: 22, fontWeight: 700, lineHeight: 1, margin: 0 }}>94% Accuracy</p>
             </div>
             {/* Floating stats */}
             <div style={{ position: "absolute", bottom: 30, left: 0, background: "white", borderRadius: 16, padding: "12px 18px", boxShadow: "0 8px 32px rgba(128,70,142,0.15)", border: "1px solid #E8D0E8" }}>
-              <p style={{ fontFamily: "\'Nunito\', sans-serif", fontSize: 10, fontWeight: 800, color: "#80468E", textTransform: "uppercase", letterSpacing: "1px", margin: "0 0 4px" }}>Next Period</p>
-              <p style={{ fontFamily: "\'Cormorant Garamond\', serif", fontSize: 28, fontWeight: 700, color: "#2D1040", lineHeight: 1, margin: "0 0 4px" }}>March 28</p>
+              <p style={{ fontFamily: "Nunito, sans-serif", fontSize: 10, fontWeight: 800, color: "#80468E", textTransform: "uppercase", letterSpacing: "1px", margin: "0 0 4px" }}>Next Period</p>
+              <p style={{ fontFamily: "Cormorant Garamond, serif", fontSize: 28, fontWeight: 700, color: "#2D1040", lineHeight: 1, margin: "0 0 4px" }}>March 28</p>
               <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                 <div style={{ width: 80, height: 4, background: "#E8D0E8", borderRadius: 2 }}>
                   <div style={{ width: "78%", height: "100%", background: "linear-gradient(90deg, #D85E82, #80468E)", borderRadius: 2 }} />
                 </div>
-                <span style={{ fontFamily: "\'Nunito\', sans-serif", fontSize: 10, color: "#D85E82", fontWeight: 700 }}>High confidence</span>
+                <span style={{ fontFamily: "Nunito, sans-serif", fontSize: 10, color: "#D85E82", fontWeight: 700 }}>High confidence</span>
               </div>
             </div>
           </div>
@@ -195,8 +195,8 @@ export default function LandingPage() {
         <div style={{ maxWidth: 1000, margin: "0 auto", display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 40, textAlign: "center" }}>
           {[["94%","Prediction Accuracy"],["12K+","Women Supported"],["< 3 min","PCOS Screening"],["100%","Privacy Guaranteed"]].map(([v, l]) => (
             <div key={l}>
-              <p style={{ fontFamily: "\'Cormorant Garamond\', serif", fontSize: 42, fontWeight: 700, color: "white", lineHeight: 1, marginBottom: 6 }}>{v}</p>
-              <p style={{ fontFamily: "\'Nunito\', sans-serif", fontSize: 13, color: "rgba(255,255,255,0.75)" }}>{l}</p>
+              <p style={{ fontFamily: "Cormorant Garamond, serif", fontSize: 42, fontWeight: 700, color: "white", lineHeight: 1, marginBottom: 6 }}>{v}</p>
+              <p style={{ fontFamily: "Nunito, sans-serif", fontSize: 13, color: "rgba(255,255,255,0.75)" }}>{l}</p>
             </div>
           ))}
         </div>
@@ -237,7 +237,7 @@ export default function LandingPage() {
                 padding: "10px 22px", borderRadius: 50, border: `2px solid ${activePhase === i ? "#D85E82" : "#E8C8D8"}`,
                 background: activePhase === i ? "linear-gradient(135deg, #D85E82, #80468E)" : "white",
                 color: activePhase === i ? "white" : "#9A70A8",
-                fontFamily: "\'Nunito\', sans-serif", fontSize: 14, fontWeight: 700,
+                fontFamily: "Nunito, sans-serif", fontSize: 14, fontWeight: 700,
                 cursor: "pointer", transition: "all 0.2s",
                 boxShadow: activePhase === i ? "0 4px 16px rgba(216,94,130,0.35)" : "none",
               }}>
@@ -247,7 +247,7 @@ export default function LandingPage() {
           </div>
           <div style={{ background: ph.bg, borderRadius: 28, padding: "40px 48px", border: `2px solid ${ph.border}`, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 48, alignItems: "center", transition: "all 0.4s" }}>
             <div>
-              <p style={{ fontFamily: "\'Nunito\', sans-serif", fontSize: 11, fontWeight: 800, color: "#9A70A8", textTransform: "uppercase", letterSpacing: "1.2px", marginBottom: 10 }}>{ph.days}</p>
+              <p style={{ fontFamily: "Nunito, sans-serif", fontSize: 11, fontWeight: 800, color: "#9A70A8", textTransform: "uppercase", letterSpacing: "1.2px", marginBottom: 10 }}>{ph.days}</p>
               <h3 style={{ ...S.h2, fontSize: 40, marginBottom: 16 }}>{ph.emoji} {ph.name} Phase</h3>
               <p style={{ ...S.body, fontSize: 16, lineHeight: 1.8 }}>{ph.tip}</p>
             </div>
@@ -280,8 +280,8 @@ export default function LandingPage() {
                 <p style={{ ...S.body, fontSize: 14, lineHeight: 1.8, fontStyle: "italic", marginBottom: 24 }}>"{t.text}"</p>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                   <div>
-                    <p style={{ fontFamily: "\'Nunito\', sans-serif", fontSize: 14, fontWeight: 700, color: "#2D1040" }}>{t.name}</p>
-                    <p style={{ fontFamily: "\'Nunito\', sans-serif", fontSize: 12, color: "#9A70A8" }}>{t.loc}</p>
+                    <p style={{ fontFamily: "Nunito, sans-serif", fontSize: 14, fontWeight: 700, color: "#2D1040" }}>{t.name}</p>
+                    <p style={{ fontFamily: "Nunito, sans-serif", fontSize: 12, color: "#9A70A8" }}>{t.loc}</p>
                   </div>
                   <span style={{ ...S.tag, fontSize: 10 }}>{t.tag}</span>
                 </div>
@@ -306,7 +306,7 @@ export default function LandingPage() {
         <div style={{ maxWidth: 680, margin: "0 auto", textAlign: "center", position: "relative", zIndex: 2 }}>
           <div style={{ fontSize: 56, marginBottom: 20 }}>🌸</div>
           <h2 style={{ ...S.h2, marginBottom: 16 }}>Ready to understand <span style={{ color: "#D85E82", fontStyle: "italic" }}>your body?</span></h2>
-          <p style={{ ...S.body, fontSize: 17, lineHeight: 1.75, marginBottom: 44 }}>Launching March 8 · International Women\'s Day · Early access is completely free.</p>
+          <p style={{ ...S.body, fontSize: 17, lineHeight: 1.75, marginBottom: 44 }}>Launching March 8 · International Women's Day · Early access is completely free.</p>
           <div style={{ display: "flex", gap: 16, justifyContent: "center", flexWrap: "wrap" }}>
             <button onClick={() => navigate("/login?tab=register")} style={{ ...S.btnPrimary, fontSize: 16, padding: "17px 44px" }}
               onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-3px)"; e.currentTarget.style.boxShadow = "0 12px 36px rgba(216,94,130,0.50)"; }}
@@ -326,15 +326,29 @@ export default function LandingPage() {
       <footer style={{ background: "#2D1040", padding: "48px 5%", textAlign: "center" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10, marginBottom: 12 }}>
           <span style={{ fontSize: 22 }}>🌸</span>
-          <span style={{ fontFamily: "\'Cormorant Garamond\', serif", fontSize: 22, fontWeight: 700, color: "#E8A8BE" }}>SheCare</span>
+          <span style={{ fontFamily: "Cormorant Garamond', serif", fontSize: 22, fontWeight: 700, color: "#E8A8BE" }}>SheCare</span>
         </div>
-        <p style={{ fontFamily: "\'Nunito\', sans-serif", fontSize: 13, color: "#9A70A8" }}>Built with 💗 for women everywhere · Privacy-first · No data sold · Ever.</p>
-        <p style={{ fontFamily: "\'Nunito\', sans-serif", fontSize: 12, color: "#6B4080", marginTop: 8 }}>© 2025 SheCare · Launching March 8 · International Women\'s Day</p>
+        <p style={{ fontFamily: "Nunito', sans-serif", fontSize: 13, color: "#9A70A8" }}>Built with 💗 for women everywhere · Privacy-first · No data sold · Ever.</p>
+        <p style={{ fontFamily: "Nunito', sans-serif", fontSize: 12, color: "#6B4080", marginTop: 8 }}>© 2025 SheCare · Launching March 8 · International Women's Day</p>
         <div style={{ display: "flex", justifyContent: "center", gap: 28, marginTop: 20 }}>
           {["Privacy Policy", "Terms of Service", "Contact"].map(l => (
-            <a key={l} href="#" style={{ fontFamily: "\'Nunito\', sans-serif", fontSize: 12, color: "#6B4080", textDecoration: "none", transition: "color 0.2s" }}
-              onMouseEnter={e => e.target.style.color = "#E8A8BE"}
-              onMouseLeave={e => e.target.style.color = "#6B4080"}>{l}</a>
+            <a
+  key={l}
+  href={`#${l.toLowerCase()}`}
+  role="button"
+  style={{
+    ...S.body,
+    fontSize: 14,
+    fontWeight: 600,
+    textDecoration: "none",
+    color: "#9A70A8",
+    transition: "color 0.2s"
+  }}
+  onMouseEnter={e => (e.target.style.color = "#D85E82")}
+  onMouseLeave={e => (e.target.style.color = "#9A70A8")}
+>
+  {l}
+</a>
           ))}
         </div>
       </footer>

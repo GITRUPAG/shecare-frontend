@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { useNavigate } from "react-router-dom";
 import { AppShell } from "../components/Layout";
 import {
   createPost,
@@ -720,7 +719,6 @@ function MyPostsEmpty({ onCompose }) {
 
 // ─── CommunityPage ────────────────────────────────────────────────────────────
 export default function CommunityPage() {
-  const navigate    = useNavigate();
   const currentUser = JSON.parse(localStorage.getItem("shecare_user") || "{}");
   const username    = currentUser?.username || "You";
 

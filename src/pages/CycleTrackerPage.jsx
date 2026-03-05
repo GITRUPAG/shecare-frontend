@@ -1,5 +1,4 @@
 import { useState, useEffect, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
 import { AppShell } from "../components/Layout";
 import {
   logPeriod,
@@ -359,7 +358,7 @@ function NewUserWelcome({ onStartLogging }) {
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export default function CycleTrackerPage() {
-  const navigate = useNavigate();
+  
 
   const [tab,         setTab]         = useState("log");
   const [log,         setLog]         = useState({mood:3,flow:0,pain:2,sleep:7,stress:3,energy:6,symptoms:[],notes:"",startDate:"",endDate:""});
