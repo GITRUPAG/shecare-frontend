@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { AppShell } from "../components/Layout";
-import { predictPCOS, getPeriodPrediction } from "../api/periodService";
+import { predictPCOS } from "../api/periodService";
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
 const C = {
