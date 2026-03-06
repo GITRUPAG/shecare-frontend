@@ -40,6 +40,17 @@ const fmt      = d => !d ? "—" : new Date(d + "T00:00:00").toLocaleDateString(
 const fmtRange = (a,b) => (!a||!b) ? "—" : `${fmt(a)} – ${fmt(b)}`;
 const toISO    = (y,m,d) => `${y}-${String(m+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
 
+// ─── Responsive hook ──────────────────────────────────────────────────────────
+function useIsMobile() {
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  useEffect(() => {
+    const handler = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener("resize", handler);
+    return () => window.removeEventListener("resize", handler);
+  }, []);
+  return isMobile;
+}
+
 // ─── Build a Set of all ISO dates that fall within any past period range ──────
 function buildPastPeriodDates(logs) {
   const set = new Set();
@@ -336,19 +347,20 @@ function NewUserWelcome({ onStartLogging }) {
     <div style={{
       background: C.white, borderRadius: 24, border: `1px solid ${C.border}`,
       boxShadow: "0 2px 16px rgba(96,51,119,0.07)",
-      padding: "48px 40px", textAlign: "center", maxWidth: 480, margin: "0 auto",
+      padding: "40px 24px", textAlign: "center", maxWidth: 480, margin: "0 auto",
     }}>
-      <div style={{ fontSize: 56, marginBottom: 16 }}>🌸</div>
-      <h2 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 28, fontWeight: 700, color: C.textDark, marginBottom: 10 }}>
+      <div style={{ fontSize: 52, marginBottom: 14 }}>🌸</div>
+      <h2 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 26, fontWeight: 700, color: C.textDark, marginBottom: 10 }}>
         Welcome to Your Cycle Tracker
       </h2>
-      <p style={{ fontFamily: "'Nunito', sans-serif", fontSize: 14, color: C.textSoft, lineHeight: 1.7, marginBottom: 28 }}>
+      <p style={{ fontFamily: "'Nunito', sans-serif", fontSize: 14, color: C.textSoft, lineHeight: 1.7, marginBottom: 24 }}>
         Log your first period to unlock AI predictions, phase insights, fertile window tracking and your personal cycle history.
       </p>
       <button onClick={onStartLogging} style={{
         background: C.grad, color: "#fff", border: "none", borderRadius: 14,
         padding: "14px 32px", fontFamily: "'Nunito', sans-serif", fontSize: 15,
         fontWeight: 700, cursor: "pointer", boxShadow: `0 4px 20px ${C.primaryGlow}`,
+        width: "100%",
       }}>
         Log My First Period →
       </button>
@@ -358,7 +370,7 @@ function NewUserWelcome({ onStartLogging }) {
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export default function CycleTrackerPage() {
-  
+  const isMobile = useIsMobile();
 
   const [tab,         setTab]         = useState("log");
   const [log,         setLog]         = useState({mood:3,flow:0,pain:2,sleep:7,stress:3,energy:6,symptoms:[],notes:"",startDate:"",endDate:""});
@@ -413,6 +425,7 @@ export default function CycleTrackerPage() {
         sleepHours:log.sleep, stressLevel:log.stress, energyLevel:log.energy,
         symptoms:log.symptoms, notes:log.notes,
       });
+
       setSaved(true);
       setFeedback({type:"success",msg:"Log saved! AI predictions updated. 🌸"});
       // Refresh — again use allSettled so a partial failure doesn't throw
@@ -429,31 +442,45 @@ export default function CycleTrackerPage() {
     } finally { setSubmitting(false); }
   };
 
-  const card = {background:C.white,borderRadius:24,padding:"28px",border:`1px solid ${C.border}`,boxShadow:"0 2px 16px rgba(96,51,119,0.07)"};
+  const card = {
+    background: C.white, borderRadius: 20,
+    padding: isMobile ? "16px" : "28px",
+    border: `1px solid ${C.border}`,
+    boxShadow: "0 2px 16px rgba(96,51,119,0.07)",
+    boxSizing: "border-box",
+  };
 
   // ── Determine if this is a brand new user (no data anywhere) ────────────────
   const isNewUser = !loading && !prediction && !calendar && periodLogs.length === 0;
 
   return (
     <AppShell current="tracker">
-      <div style={{padding:"32px 36px",maxWidth:1060}}>
+      <div style={{
+        padding: isMobile ? "14px 12px" : "32px 36px",
+        maxWidth: 1060,
+        width: "100%",
+        boxSizing: "border-box",
+        overflowX: "hidden",
+      }}>
 
-        {/* Header */}
-        <div style={{display:"flex",alignItems:"flex-end",justifyContent:"space-between",marginBottom:24,flexWrap:"wrap",gap:12}}>
+        {/* ── Header ── */}
+        <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",marginBottom:isMobile?14:24,flexWrap:"wrap",gap:8}}>
           <div>
-            <p style={{fontFamily:"'Nunito', sans-serif",fontSize:13,color:C.textSoft,marginBottom:4}}>
+            <p style={{fontFamily:"'Nunito', sans-serif",fontSize:12,color:C.textSoft,marginBottom:3}}>
               {new Date().toLocaleDateString("en-IN",{weekday:"long",day:"numeric",month:"long"})}
             </p>
-            <h1 style={{fontFamily:"'Cormorant Garamond', serif",fontSize:36,fontWeight:700,color:C.textDark,letterSpacing:"-0.5px",lineHeight:1}}>Cycle Tracker</h1>
+            <h1 style={{fontFamily:"'Cormorant Garamond', serif",fontSize:isMobile?26:36,fontWeight:700,color:C.textDark,letterSpacing:"-0.5px",lineHeight:1}}>
+              Cycle Tracker
+            </h1>
           </div>
           {currentPhase && (
-            <span style={{fontFamily:"'Nunito', sans-serif",fontSize:12,fontWeight:800,padding:"6px 16px",borderRadius:20,background:`${phaseC}18`,color:phaseC,border:`1.5px solid ${phaseC}40`}}>
+            <span style={{fontFamily:"'Nunito', sans-serif",fontSize:11,fontWeight:800,padding:"5px 14px",borderRadius:20,background:`${phaseC}18`,color:phaseC,border:`1.5px solid ${phaseC}40`,marginTop:4,flexShrink:0}}>
               {PHASE_META[currentPhase]?.icon} {currentPhase} Phase
             </span>
           )}
         </div>
 
-        {/* Loading skeleton */}
+        {/* ── Loading skeleton ── */}
         {loading && (
           <div style={{textAlign:"center",padding:"60px 0"}}>
             <p style={{fontFamily:"'Nunito', sans-serif",fontSize:14,color:C.textSoft}}>Loading your cycle data…</p>
@@ -476,45 +503,67 @@ export default function CycleTrackerPage() {
               <Banner key={i} type="info" message={`${a.type==="PERIOD"?"🩸":a.type==="OVULATION"?"🌿":"🌱"} ${a.message}`}/>
             ))}
 
-            {/* Tabs */}
-            <div style={{display:"flex",gap:4,background:C.bgLight,borderRadius:14,padding:4,marginBottom:28,width:"fit-content"}}>
-              {[["log","📝 Log Today"],["history","📅 Cycle History"],["predictions","🔮 Predictions"]].map(([t,l])=>(
+            {/* ── Tabs ── */}
+            <div style={{
+              display:"flex", gap:4,
+              background:C.bgLight, borderRadius:14, padding:4,
+              marginBottom: isMobile ? 16 : 28,
+              width: isMobile ? "100%" : "fit-content",
+              boxSizing: "border-box",
+            }}>
+              {[
+                ["log",         isMobile ? "📝 Log"     : "📝 Log Today"],
+                ["history",     isMobile ? "📅 History" : "📅 Cycle History"],
+                ["predictions", isMobile ? "🔮 Predict" : "🔮 Predictions"],
+              ].map(([t,l])=>(
                 <button key={t} onClick={()=>setTab(t)} style={{
-                  padding:"10px 22px",borderRadius:10,border:"none",
+                  flex: isMobile ? 1 : "none",
+                  padding: isMobile ? "9px 4px" : "10px 22px",
+                  borderRadius:10, border:"none",
                   background:tab===t?C.white:"transparent",
                   color:tab===t?C.textDark:C.textSoft,
-                  fontFamily:"'Nunito', sans-serif",fontSize:13,fontWeight:700,
-                  cursor:"pointer",transition:"all 0.2s",
+                  fontFamily:"'Nunito', sans-serif",
+                  fontSize: isMobile ? 11 : 13,
+                  fontWeight:700,
+                  cursor:"pointer", transition:"all 0.2s",
                   boxShadow:tab===t?"0 2px 10px rgba(96,51,119,0.12)":"none",
+                  whiteSpace:"nowrap",
                 }}>{l}</button>
               ))}
             </div>
 
             {/* ══════ LOG TAB ══════ */}
             {tab==="log" && (
-              <div style={{display:"grid",gridTemplateColumns:"1fr 340px",gap:20,alignItems:"start"}}>
-                <div style={{display:"flex",flexDirection:"column",gap:16}}>
+              <div style={{
+                display:"grid",
+                gridTemplateColumns: isMobile ? "1fr" : "1fr 340px",
+                gap: 16,
+                alignItems:"start",
+              }}>
+                {/* ── Main form column ── */}
+                <div style={{display:"flex",flexDirection:"column",gap:14}}>
                   <Banner type={feedback.type} message={feedback.msg} onClose={()=>setFeedback({type:"",msg:""})}/>
 
                   {/* Calendar card */}
                   <div style={card}>
-                    <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",marginBottom:16}}>
-                      <div>
-                        <h2 style={{fontFamily:"'Cormorant Garamond', serif",fontSize:22,fontWeight:700,color:C.textDark,marginBottom:4}}>🩸 Select Period Dates</h2>
-                        <p style={{fontFamily:"'Nunito', sans-serif",fontSize:12,color:C.textSoft}}>Tap once for start · tap again for end · double-tap to remove</p>
+                    <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",marginBottom:14,gap:8,flexWrap:"wrap"}}>
+                      <div style={{flex:1,minWidth:0}}>
+                        <h2 style={{fontFamily:"'Cormorant Garamond', serif",fontSize:isMobile?18:22,fontWeight:700,color:C.textDark,marginBottom:3}}>🩸 Select Period Dates</h2>
+                        <p style={{fontFamily:"'Nunito', sans-serif",fontSize:11,color:C.textSoft}}>Tap once for start · tap again for end · double-tap to remove</p>
                       </div>
-                      <div style={{display:"flex",alignItems:"center",gap:8,flexShrink:0}}>
+                      <div style={{display:"flex",alignItems:"center",gap:6,flexShrink:0}}>
                         <button onClick={()=>setShowHistory(h=>!h)} style={{
-                          fontFamily:"'Nunito', sans-serif",fontSize:11,fontWeight:700,
-                          padding:"5px 12px",borderRadius:8,cursor:"pointer",transition:"all 0.2s",
+                          fontFamily:"'Nunito', sans-serif",fontSize:10,fontWeight:700,
+                          padding:"5px 10px",borderRadius:8,cursor:"pointer",transition:"all 0.2s",
                           background:showHistory?C.bgLight:"transparent",
                           color:showHistory?C.primaryDark:C.textSoft,
                           border:`1.5px solid ${showHistory?C.primary:C.border}`,
+                          whiteSpace:"nowrap",
                         }}>
-                          {showHistory?"📅 History On":"📅 History Off"}
+                          {showHistory?"📅 On":"📅 Off"}
                         </button>
                         {(log.startDate||log.endDate)&&(
-                          <button onClick={()=>{upd("startDate","");upd("endDate","");}} style={{fontFamily:"'Nunito', sans-serif",fontSize:11,fontWeight:700,color:C.textSoft,background:"none",border:`1.5px solid ${C.border}`,borderRadius:8,padding:"5px 12px",cursor:"pointer"}}>
+                          <button onClick={()=>{upd("startDate","");upd("endDate","");}} style={{fontFamily:"'Nunito', sans-serif",fontSize:10,fontWeight:700,color:C.textSoft,background:"none",border:`1.5px solid ${C.border}`,borderRadius:8,padding:"5px 10px",cursor:"pointer"}}>
                             Clear ✕
                           </button>
                         )}
@@ -529,16 +578,16 @@ export default function CycleTrackerPage() {
                       showHistory={showHistory}
                     />
 
-                    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginTop:16}}>
-                      <div style={{background:log.startDate?C.bgLight:"#F9F9F9",borderRadius:12,padding:"12px 16px",border:`1.5px solid ${log.startDate?C.primary:C.border}`,transition:"all 0.2s"}}>
+                    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginTop:14}}>
+                      <div style={{background:log.startDate?C.bgLight:"#F9F9F9",borderRadius:12,padding:"12px 14px",border:`1.5px solid ${log.startDate?C.primary:C.border}`,transition:"all 0.2s"}}>
                         <p style={{fontFamily:"'Nunito', sans-serif",fontSize:10,fontWeight:800,color:C.textSoft,textTransform:"uppercase",letterSpacing:"0.8px",marginBottom:4}}>Period Start</p>
-                        <p style={{fontFamily:"'Cormorant Garamond', serif",fontSize:20,fontWeight:700,color:log.startDate?C.primary:C.textSoft}}>
+                        <p style={{fontFamily:"'Cormorant Garamond', serif",fontSize:isMobile?16:20,fontWeight:700,color:log.startDate?C.primary:C.textSoft}}>
                           {log.startDate?fmt(log.startDate):"Not selected"}
                         </p>
                       </div>
-                      <div style={{background:log.endDate?C.bgLight:"#F9F9F9",borderRadius:12,padding:"12px 16px",border:`1.5px solid ${log.endDate?C.primary:C.border}`,transition:"all 0.2s"}}>
+                      <div style={{background:log.endDate?C.bgLight:"#F9F9F9",borderRadius:12,padding:"12px 14px",border:`1.5px solid ${log.endDate?C.primary:C.border}`,transition:"all 0.2s"}}>
                         <p style={{fontFamily:"'Nunito', sans-serif",fontSize:10,fontWeight:800,color:C.textSoft,textTransform:"uppercase",letterSpacing:"0.8px",marginBottom:4}}>Period End</p>
-                        <p style={{fontFamily:"'Cormorant Garamond', serif",fontSize:20,fontWeight:700,color:log.endDate?C.primary:C.textSoft}}>
+                        <p style={{fontFamily:"'Cormorant Garamond', serif",fontSize:isMobile?16:20,fontWeight:700,color:log.endDate?C.primary:C.textSoft}}>
                           {log.endDate?fmt(log.endDate):"Tap another date"}
                         </p>
                       </div>
@@ -547,19 +596,20 @@ export default function CycleTrackerPage() {
 
                   {/* Mood */}
                   <div style={card}>
-                    <h2 style={{fontFamily:"'Cormorant Garamond', serif",fontSize:22,fontWeight:700,color:C.textDark,marginBottom:18}}>How are you feeling?</h2>
-                    <div style={{display:"flex",gap:8}}>
+                    <h2 style={{fontFamily:"'Cormorant Garamond', serif",fontSize:isMobile?18:22,fontWeight:700,color:C.textDark,marginBottom:14}}>How are you feeling?</h2>
+                    <div style={{display:"flex",gap:isMobile?5:8}}>
                       {MOODS.map(m=>(
                         <button key={m.v} onClick={()=>upd("mood",m.v)} style={{
-                          flex:1,padding:"16px 6px",borderRadius:16,
+                          flex:1, padding: isMobile?"11px 2px":"16px 6px",
+                          borderRadius:14,
                           border:`2px solid ${log.mood===m.v?C.primary:C.border}`,
                           background:log.mood===m.v?C.bgLight:C.white,
                           cursor:"pointer",transition:"all 0.2s",
-                          display:"flex",flexDirection:"column",alignItems:"center",gap:8,
+                          display:"flex",flexDirection:"column",alignItems:"center",gap:6,
                           boxShadow:log.mood===m.v?`0 4px 14px ${C.primaryGlow}`:"none",
                         }}>
-                          <span style={{fontSize:26}}>{m.e}</span>
-                          <span style={{fontFamily:"'Nunito', sans-serif",fontSize:11,fontWeight:700,color:log.mood===m.v?C.primary:C.textSoft}}>{m.l}</span>
+                          <span style={{fontSize:isMobile?20:26}}>{m.e}</span>
+                          <span style={{fontFamily:"'Nunito', sans-serif",fontSize:isMobile?9:11,fontWeight:700,color:log.mood===m.v?C.primary:C.textSoft}}>{m.l}</span>
                         </button>
                       ))}
                     </div>
@@ -567,22 +617,23 @@ export default function CycleTrackerPage() {
 
                   {/* Flow */}
                   <div style={card}>
-                    <h2 style={{fontFamily:"'Cormorant Garamond', serif",fontSize:22,fontWeight:700,color:C.textDark,marginBottom:16}}>Flow Intensity</h2>
-                    <div style={{display:"flex",gap:8}}>
+                    <h2 style={{fontFamily:"'Cormorant Garamond', serif",fontSize:isMobile?18:22,fontWeight:700,color:C.textDark,marginBottom:14}}>Flow Intensity</h2>
+                    <div style={{display:"flex",gap:isMobile?5:8}}>
                       {FLOWS.map(f=>{
                         const sel=log.flow===f.v;
                         return (
                           <button key={f.v} onClick={()=>upd("flow",f.v)} style={{
-                            flex:1,padding:"14px 6px",borderRadius:14,
+                            flex:1, padding: isMobile?"10px 2px":"14px 6px",
+                            borderRadius:12,
                             border:`2px solid ${sel?C.primary:C.border}`,
                             background:sel?C.grad:C.white,
                             color:sel?"#fff":C.textSoft,
-                            fontFamily:"'Nunito', sans-serif",fontSize:12,fontWeight:700,
+                            fontFamily:"'Nunito', sans-serif",fontSize:isMobile?9:12,fontWeight:700,
                             cursor:"pointer",transition:"all 0.2s",
-                            display:"flex",flexDirection:"column",alignItems:"center",gap:6,
+                            display:"flex",flexDirection:"column",alignItems:"center",gap:5,
                             boxShadow:sel?`0 4px 14px ${C.primaryGlow}`:"none",
                           }}>
-                            <span style={{fontSize:18}}>{f.icon}</span>
+                            <span style={{fontSize:isMobile?14:18}}>{f.icon}</span>
                             <span>{f.l}</span>
                           </button>
                         );
@@ -591,8 +642,8 @@ export default function CycleTrackerPage() {
                   </div>
 
                   {/* Sliders */}
-                  <div style={{...card,display:"flex",flexDirection:"column",gap:26}}>
-                    <h2 style={{fontFamily:"'Cormorant Garamond', serif",fontSize:22,fontWeight:700,color:C.textDark}}>Today's Metrics</h2>
+                  <div style={{...card,display:"flex",flexDirection:"column",gap:22}}>
+                    <h2 style={{fontFamily:"'Cormorant Garamond', serif",fontSize:isMobile?18:22,fontWeight:700,color:C.textDark}}>Today's Metrics</h2>
                     <Slider label="Pain Level"   value={log.pain}   onChange={v=>upd("pain",v)}   left="None"      right="Severe"/>
                     <Slider label="Sleep"        value={log.sleep}  onChange={v=>upd("sleep",v)}  min={3} max={12} left="3h"       right="12h"/>
                     <Slider label="Stress Level" value={log.stress} onChange={v=>upd("stress",v)} left="Calm"      right="Stressed"/>
@@ -601,17 +652,18 @@ export default function CycleTrackerPage() {
 
                   {/* Symptoms */}
                   <div style={card}>
-                    <h2 style={{fontFamily:"'Cormorant Garamond', serif",fontSize:22,fontWeight:700,color:C.textDark,marginBottom:16}}>Symptoms</h2>
+                    <h2 style={{fontFamily:"'Cormorant Garamond', serif",fontSize:isMobile?18:22,fontWeight:700,color:C.textDark,marginBottom:14}}>Symptoms</h2>
                     <div style={{display:"flex",flexWrap:"wrap",gap:8}}>
                       {SYMPTOMS.map(s=>{
                         const sel=log.symptoms.includes(s);
                         return (
                           <button key={s} onClick={()=>toggleSx(s)} style={{
-                            padding:"8px 16px",borderRadius:50,
+                            padding: isMobile?"7px 12px":"8px 16px",
+                            borderRadius:50,
                             border:`2px solid ${sel?C.primary:C.border}`,
                             background:sel?C.grad:C.white,
                             color:sel?"#fff":C.textSoft,
-                            fontFamily:"'Nunito', sans-serif",fontSize:13,fontWeight:600,
+                            fontFamily:"'Nunito', sans-serif",fontSize:isMobile?12:13,fontWeight:600,
                             cursor:"pointer",transition:"all 0.2s",
                             boxShadow:sel?`0 2px 10px ${C.primaryGlow}`:"none",
                           }}>{s}</button>
@@ -622,86 +674,126 @@ export default function CycleTrackerPage() {
 
                   {/* Notes */}
                   <div style={card}>
-                    <h2 style={{fontFamily:"'Cormorant Garamond', serif",fontSize:22,fontWeight:700,color:C.textDark,marginBottom:12}}>Notes</h2>
+                    <h2 style={{fontFamily:"'Cormorant Garamond', serif",fontSize:isMobile?18:22,fontWeight:700,color:C.textDark,marginBottom:12}}>Notes</h2>
                     <textarea value={log.notes} onChange={e=>upd("notes",e.target.value)}
                       placeholder="Anything else to remember about today..."
-                      rows={3} style={{width:"100%",border:`2px solid ${C.border}`,borderRadius:12,padding:"14px",fontFamily:"'Nunito', sans-serif",fontSize:14,color:C.textDark,resize:"none",outline:"none",transition:"border-color 0.2s",boxSizing:"border-box",background:C.sand}}
+                      rows={3} style={{width:"100%",border:`2px solid ${C.border}`,borderRadius:12,padding:"12px",fontFamily:"'Nunito', sans-serif",fontSize:14,color:C.textDark,resize:"none",outline:"none",transition:"border-color 0.2s",boxSizing:"border-box",background:C.sand}}
                       onFocus={e=>e.target.style.borderColor=C.primary}
                       onBlur={e=>e.target.style.borderColor=C.border}/>
                   </div>
-                </div>
 
-                {/* ── Sidebar ── */}
-                <div style={{display:"flex",flexDirection:"column",gap:14,position:"sticky",top:24}}>
+                  {/* ── Mobile: Save button + AI prediction card live here ── */}
+                  {isMobile && (
+                    <>
+                      <button onClick={save} disabled={submitting} style={{
+                        width:"100%", border:"none", borderRadius:14, padding:"16px",
+                        background:saved?"linear-gradient(135deg,#22C55E,#16A34A)":submitting?C.border:C.grad,
+                        color:"#fff", fontFamily:"'Nunito', sans-serif", fontSize:15, fontWeight:700,
+                        cursor:submitting?"not-allowed":"pointer", transition:"all 0.3s",
+                        boxShadow:saved?"0 4px 16px rgba(34,197,94,0.35)":`0 4px 20px ${C.primaryGlow}`,
+                      }}>
+                        {submitting?"Saving…":saved?"✓ Saved!":"Save Log →"}
+                      </button>
 
-                  {/* Summary card */}
-                  <div style={{...card,padding:"22px"}}>
-                    <h3 style={{fontFamily:"'Cormorant Garamond', serif",fontSize:20,fontWeight:700,color:C.textDark,marginBottom:14}}>Today's Summary</h3>
-                    <div style={{background:log.startDate?C.bgLight:"#F9F9F9",borderRadius:12,padding:"12px 14px",marginBottom:12,border:`1px solid ${log.startDate?C.primary+"40":C.border}`}}>
-                      <p style={{fontFamily:"'Nunito', sans-serif",fontSize:10,fontWeight:800,color:C.textSoft,textTransform:"uppercase",letterSpacing:"0.8px",marginBottom:4}}>Period Dates</p>
-                      {log.startDate
-                        ? <p style={{fontFamily:"'Nunito', sans-serif",fontSize:13,fontWeight:700,color:C.textDark}}>{fmt(log.startDate)}{log.endDate?` → ${fmt(log.endDate)}`:" (ongoing)"}</p>
-                        : <p style={{fontFamily:"'Nunito', sans-serif",fontSize:12,color:C.textSoft,fontStyle:"italic"}}>Select on calendar ↑</p>
-                      }
-                    </div>
-                    <div style={{display:"flex",flexDirection:"column",gap:7,marginBottom:14}}>
-                      {[
-                        ["Mood",   MOODS.find(m=>m.v===log.mood)?.e+" "+MOODS.find(m=>m.v===log.mood)?.l],
-                        ["Flow",   FLOWS.find(f=>f.v===log.flow)?.l],
-                        ["Pain",   `${log.pain}/10`],
-                        ["Sleep",  `${log.sleep}h`],
-                        ["Energy", `${log.energy}/10`],
-                      ].map(([k,v])=>(
-                        <div key={k} style={{display:"flex",justifyContent:"space-between",paddingBottom:7,borderBottom:`1px solid ${C.bgLight}`}}>
-                          <span style={{fontFamily:"'Nunito', sans-serif",fontSize:12,color:C.textSoft}}>{k}</span>
-                          <span style={{fontFamily:"'Nunito', sans-serif",fontSize:12,fontWeight:700,color:C.textDark}}>{v}</span>
-                        </div>
-                      ))}
-                    </div>
-                    {log.symptoms.length>0&&(
-                      <div style={{marginBottom:14}}>
-                        <p style={{fontFamily:"'Nunito', sans-serif",fontSize:10,color:C.textSoft,marginBottom:6,fontWeight:700,textTransform:"uppercase",letterSpacing:"0.8px"}}>Symptoms</p>
-                        <div style={{display:"flex",flexWrap:"wrap",gap:4}}>
-                          {log.symptoms.map(s=><span key={s} style={{fontFamily:"'Nunito', sans-serif",fontSize:11,background:C.bgLight,color:C.primaryDark,borderRadius:20,padding:"3px 10px",fontWeight:600}}>{s}</span>)}
-                        </div>
+                      <div style={{background:C.grad,borderRadius:20,padding:"18px",color:"#fff"}}>
+                        <p style={{fontFamily:"'Nunito', sans-serif",fontSize:10,fontWeight:800,opacity:0.75,textTransform:"uppercase",letterSpacing:"1px",marginBottom:8}}>🔮 AI Prediction</p>
+                        {prediction ? (
+                          <>
+                            <p style={{fontFamily:"'Cormorant Garamond', serif",fontSize:22,fontWeight:700,marginBottom:2}}>{fmt(prediction.predictedStartDate)}</p>
+                            <p style={{fontFamily:"'Nunito', sans-serif",fontSize:11,opacity:0.8,marginBottom:6}}>Next period start</p>
+                            <p style={{fontFamily:"'Nunito', sans-serif",fontSize:12,opacity:0.85}}>Fertile: {fmtRange(prediction.fertileStart,prediction.fertileEnd)}</p>
+                            {prediction.ovulationDay&&<p style={{fontFamily:"'Nunito', sans-serif",fontSize:12,opacity:0.85,marginTop:4}}>Ovulation: {fmt(prediction.ovulationDay)}</p>}
+                          </>
+                        ) : (
+                          <p style={{fontFamily:"'Nunito', sans-serif",fontSize:12,opacity:0.75,lineHeight:1.6}}>Log a period to get your first AI prediction.</p>
+                        )}
                       </div>
-                    )}
-                    <button onClick={save} disabled={submitting} style={{
-                      width:"100%",border:"none",borderRadius:12,padding:"14px",
-                      background:saved?"linear-gradient(135deg,#22C55E,#16A34A)":submitting?C.border:C.grad,
-                      color:"#fff",fontFamily:"'Nunito', sans-serif",fontSize:14,fontWeight:700,
-                      cursor:submitting?"not-allowed":"pointer",transition:"all 0.3s",
-                      boxShadow:saved?"0 4px 16px rgba(34,197,94,0.35)":`0 4px 20px ${C.primaryGlow}`,
-                    }}>
-                      {submitting?"Saving…":saved?"✓ Saved!":"Save Log →"}
-                    </button>
-                  </div>
 
-                  {/* AI prediction */}
-                  <div style={{background:C.grad,borderRadius:20,padding:"20px",color:"#fff"}}>
-                    <p style={{fontFamily:"'Nunito', sans-serif",fontSize:10,fontWeight:800,opacity:0.75,textTransform:"uppercase",letterSpacing:"1px",marginBottom:10}}>🔮 AI Prediction</p>
-                    {prediction ? (
-                      <>
-                        <p style={{fontFamily:"'Cormorant Garamond', serif",fontSize:24,fontWeight:700,marginBottom:2}}>{fmt(prediction.predictedStartDate)}</p>
-                        <p style={{fontFamily:"'Nunito', sans-serif",fontSize:11,opacity:0.8,marginBottom:8}}>Next period start</p>
-                        <p style={{fontFamily:"'Nunito', sans-serif",fontSize:12,opacity:0.85}}>Fertile: {fmtRange(prediction.fertileStart,prediction.fertileEnd)}</p>
-                        {prediction.ovulationDay&&<p style={{fontFamily:"'Nunito', sans-serif",fontSize:12,opacity:0.85,marginTop:4}}>Ovulation: {fmt(prediction.ovulationDay)}</p>}
-                      </>
-                    ) : (
-                      <p style={{fontFamily:"'Nunito', sans-serif",fontSize:12,opacity:0.75,lineHeight:1.6}}>Log a period to get your first AI prediction.</p>
-                    )}
-                  </div>
-
-                  {/* Phase insight */}
-                  {insights&&(
-                    <div style={{...card,padding:"18px"}}>
-                      <p style={{fontFamily:"'Nunito', sans-serif",fontSize:10,fontWeight:800,color:C.secondary,textTransform:"uppercase",letterSpacing:"1px",marginBottom:8}}>💡 Phase Insight</p>
-                      <p style={{fontFamily:"'Nunito', sans-serif",fontSize:12,color:C.textMid,lineHeight:1.65}}>
-                        {typeof insights==="string"?insights:insights?.tip||insights?.message||"—"}
-                      </p>
-                    </div>
+                      {insights&&(
+                        <div style={{...card,padding:"16px"}}>
+                          <p style={{fontFamily:"'Nunito', sans-serif",fontSize:10,fontWeight:800,color:C.secondary,textTransform:"uppercase",letterSpacing:"1px",marginBottom:8}}>💡 Phase Insight</p>
+                          <p style={{fontFamily:"'Nunito', sans-serif",fontSize:12,color:C.textMid,lineHeight:1.65}}>
+                            {typeof insights==="string"?insights:insights?.tip||insights?.message||"—"}
+                          </p>
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
+
+                {/* ── Desktop sidebar ── */}
+                {!isMobile && (
+                  <div style={{display:"flex",flexDirection:"column",gap:14,position:"sticky",top:24}}>
+
+                    {/* Summary card */}
+                    <div style={{...card,padding:"22px"}}>
+                      <h3 style={{fontFamily:"'Cormorant Garamond', serif",fontSize:20,fontWeight:700,color:C.textDark,marginBottom:14}}>Today's Summary</h3>
+                      <div style={{background:log.startDate?C.bgLight:"#F9F9F9",borderRadius:12,padding:"12px 14px",marginBottom:12,border:`1px solid ${log.startDate?C.primary+"40":C.border}`}}>
+                        <p style={{fontFamily:"'Nunito', sans-serif",fontSize:10,fontWeight:800,color:C.textSoft,textTransform:"uppercase",letterSpacing:"0.8px",marginBottom:4}}>Period Dates</p>
+                        {log.startDate
+                          ? <p style={{fontFamily:"'Nunito', sans-serif",fontSize:13,fontWeight:700,color:C.textDark}}>{fmt(log.startDate)}{log.endDate?` → ${fmt(log.endDate)}`:" (ongoing)"}</p>
+                          : <p style={{fontFamily:"'Nunito', sans-serif",fontSize:12,color:C.textSoft,fontStyle:"italic"}}>Select on calendar ↑</p>
+                        }
+                      </div>
+                      <div style={{display:"flex",flexDirection:"column",gap:7,marginBottom:14}}>
+                        {[
+                          ["Mood",   MOODS.find(m=>m.v===log.mood)?.e+" "+MOODS.find(m=>m.v===log.mood)?.l],
+                          ["Flow",   FLOWS.find(f=>f.v===log.flow)?.l],
+                          ["Pain",   `${log.pain}/10`],
+                          ["Sleep",  `${log.sleep}h`],
+                          ["Energy", `${log.energy}/10`],
+                        ].map(([k,v])=>(
+                          <div key={k} style={{display:"flex",justifyContent:"space-between",paddingBottom:7,borderBottom:`1px solid ${C.bgLight}`}}>
+                            <span style={{fontFamily:"'Nunito', sans-serif",fontSize:12,color:C.textSoft}}>{k}</span>
+                            <span style={{fontFamily:"'Nunito', sans-serif",fontSize:12,fontWeight:700,color:C.textDark}}>{v}</span>
+                          </div>
+                        ))}
+                      </div>
+                      {log.symptoms.length>0&&(
+                        <div style={{marginBottom:14}}>
+                          <p style={{fontFamily:"'Nunito', sans-serif",fontSize:10,color:C.textSoft,marginBottom:6,fontWeight:700,textTransform:"uppercase",letterSpacing:"0.8px"}}>Symptoms</p>
+                          <div style={{display:"flex",flexWrap:"wrap",gap:4}}>
+                            {log.symptoms.map(s=><span key={s} style={{fontFamily:"'Nunito', sans-serif",fontSize:11,background:C.bgLight,color:C.primaryDark,borderRadius:20,padding:"3px 10px",fontWeight:600}}>{s}</span>)}
+                          </div>
+                        </div>
+                      )}
+                      <button onClick={save} disabled={submitting} style={{
+                        width:"100%",border:"none",borderRadius:12,padding:"14px",
+                        background:saved?"linear-gradient(135deg,#22C55E,#16A34A)":submitting?C.border:C.grad,
+                        color:"#fff",fontFamily:"'Nunito', sans-serif",fontSize:14,fontWeight:700,
+                        cursor:submitting?"not-allowed":"pointer",transition:"all 0.3s",
+                        boxShadow:saved?"0 4px 16px rgba(34,197,94,0.35)":`0 4px 20px ${C.primaryGlow}`,
+                      }}>
+                        {submitting?"Saving…":saved?"✓ Saved!":"Save Log →"}
+                      </button>
+                    </div>
+
+                    {/* AI prediction */}
+                    <div style={{background:C.grad,borderRadius:20,padding:"20px",color:"#fff"}}>
+                      <p style={{fontFamily:"'Nunito', sans-serif",fontSize:10,fontWeight:800,opacity:0.75,textTransform:"uppercase",letterSpacing:"1px",marginBottom:10}}>🔮 AI Prediction</p>
+                      {prediction ? (
+                        <>
+                          <p style={{fontFamily:"'Cormorant Garamond', serif",fontSize:24,fontWeight:700,marginBottom:2}}>{fmt(prediction.predictedStartDate)}</p>
+                          <p style={{fontFamily:"'Nunito', sans-serif",fontSize:11,opacity:0.8,marginBottom:8}}>Next period start</p>
+                          <p style={{fontFamily:"'Nunito', sans-serif",fontSize:12,opacity:0.85}}>Fertile: {fmtRange(prediction.fertileStart,prediction.fertileEnd)}</p>
+                          {prediction.ovulationDay&&<p style={{fontFamily:"'Nunito', sans-serif",fontSize:12,opacity:0.85,marginTop:4}}>Ovulation: {fmt(prediction.ovulationDay)}</p>}
+                        </>
+                      ) : (
+                        <p style={{fontFamily:"'Nunito', sans-serif",fontSize:12,opacity:0.75,lineHeight:1.6}}>Log a period to get your first AI prediction.</p>
+                      )}
+                    </div>
+
+                    {/* Phase insight */}
+                    {insights&&(
+                      <div style={{...card,padding:"18px"}}>
+                        <p style={{fontFamily:"'Nunito', sans-serif",fontSize:10,fontWeight:800,color:C.secondary,textTransform:"uppercase",letterSpacing:"1px",marginBottom:8}}>💡 Phase Insight</p>
+                        <p style={{fontFamily:"'Nunito', sans-serif",fontSize:12,color:C.textMid,lineHeight:1.65}}>
+                          {typeof insights==="string"?insights:insights?.tip||insights?.message||"—"}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             )}
 
@@ -710,10 +802,14 @@ export default function CycleTrackerPage() {
               periodLogs.length === 0 ? (
                 <NewUserWelcome onStartLogging={() => setTab("log")} />
               ) : (
-                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:20,alignItems:"start"}}>
+                <div style={{
+                  display:"grid",
+                  gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr",
+                  gap:16, alignItems:"start",
+                }}>
                   <div style={card}>
-                    <h2 style={{fontFamily:"'Cormorant Garamond', serif",fontSize:22,fontWeight:700,color:C.textDark,marginBottom:4}}>Period Calendar</h2>
-                    <p style={{fontFamily:"'Nunito', sans-serif",fontSize:12,color:C.textSoft,marginBottom:20}}>Your logged period history visualised on the calendar</p>
+                    <h2 style={{fontFamily:"'Cormorant Garamond', serif",fontSize:isMobile?18:22,fontWeight:700,color:C.textDark,marginBottom:4}}>Period Calendar</h2>
+                    <p style={{fontFamily:"'Nunito', sans-serif",fontSize:12,color:C.textSoft,marginBottom:16}}>Your logged period history visualised on the calendar</p>
                     <PeriodCalendar
                       startDate={null} endDate={null}
                       onStartDate={()=>{}} onEndDate={()=>{}}
@@ -723,9 +819,9 @@ export default function CycleTrackerPage() {
                     />
                   </div>
                   <div style={card}>
-                    <div style={{display:"flex",alignItems:"baseline",justifyContent:"space-between",marginBottom:20}}>
+                    <div style={{display:"flex",alignItems:"baseline",justifyContent:"space-between",marginBottom:16}}>
                       <div>
-                        <h2 style={{fontFamily:"'Cormorant Garamond', serif",fontSize:22,fontWeight:700,color:C.textDark,marginBottom:4}}>Past Periods</h2>
+                        <h2 style={{fontFamily:"'Cormorant Garamond', serif",fontSize:isMobile?18:22,fontWeight:700,color:C.textDark,marginBottom:4}}>Past Periods</h2>
                         <p style={{fontFamily:"'Nunito', sans-serif",fontSize:12,color:C.textSoft}}>
                           {[...new Map(periodLogs.map(l=>[l.startDate,l])).values()].length} cycle{[...new Map(periodLogs.map(l=>[l.startDate,l])).values()].length!==1?"s":""} logged
                         </p>
@@ -739,13 +835,17 @@ export default function CycleTrackerPage() {
 
             {/* ══════ PREDICTIONS TAB ══════ */}
             {tab==="predictions" && (
-              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:20}}>
+              <div style={{
+                display:"grid",
+                gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr",
+                gap:16,
+              }}>
                 <div style={card}>
-                  <h2 style={{fontFamily:"'Cormorant Garamond', serif",fontSize:24,fontWeight:700,color:C.textDark,marginBottom:24}}>🔮 Upcoming Predictions</h2>
+                  <h2 style={{fontFamily:"'Cormorant Garamond', serif",fontSize:isMobile?20:24,fontWeight:700,color:C.textDark,marginBottom:20}}>🔮 Upcoming Predictions</h2>
                   {!prediction ? (
                     <div style={{background:C.bgLight,borderRadius:14,padding:"24px",textAlign:"center"}}>
                       <p style={{fontFamily:"'Nunito', sans-serif",fontSize:13,color:C.textSoft,marginBottom:14}}>No predictions yet. Log a period to generate your first AI prediction.</p>
-                      <button onClick={()=>setTab("log")} style={{background:C.grad,color:"#fff",border:"none",borderRadius:10,padding:"10px 20px",fontFamily:"'Nunito', sans-serif",fontSize:13,fontWeight:700,cursor:"pointer"}}>→ Log Today</button>
+                      <button onClick={()=>setTab("log")} style={{background:C.grad,color:"#fff",border:"none",borderRadius:10,padding:"10px 20px",fontFamily:"'Nunito', sans-serif",fontSize:13,fontWeight:700,cursor:"pointer",width:isMobile?"100%":"auto"}}>→ Log Today</button>
                     </div>
                   ) : (
                     <div style={{display:"flex",flexDirection:"column"}}>
@@ -756,10 +856,10 @@ export default function CycleTrackerPage() {
                         // ── FIX: safe-access calendar fields — null when new user ──
                         {l:"PMS Window",     d:calendar ? fmtRange(calendar.pmsStart, calendar.pmsEnd) : "—",      c:C.luteal},
                       ].map(p=>(
-                        <div key={p.l} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"16px 0",borderBottom:`1px solid ${C.bgLight}`}}>
+                        <div key={p.l} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"14px 0",borderBottom:`1px solid ${C.bgLight}`}}>
                           <div>
                             <p style={{fontFamily:"'Nunito', sans-serif",fontSize:12,fontWeight:700,color:C.textSoft,marginBottom:4}}>{p.l}</p>
-                            <p style={{fontFamily:"'Cormorant Garamond', serif",fontSize:22,fontWeight:700,color:p.c}}>{p.d}</p>
+                            <p style={{fontFamily:"'Cormorant Garamond', serif",fontSize:isMobile?18:22,fontWeight:700,color:p.c}}>{p.d}</p>
                           </div>
                           <span style={{fontFamily:"'Nunito', sans-serif",fontSize:10,fontWeight:800,padding:"3px 10px",borderRadius:20,background:`${p.c}18`,color:p.c,border:`1px solid ${p.c}30`}}>AI</span>
                         </div>
@@ -769,7 +869,7 @@ export default function CycleTrackerPage() {
                 </div>
 
                 <div style={card}>
-                  <h2 style={{fontFamily:"'Cormorant Garamond', serif",fontSize:24,fontWeight:700,color:C.textDark,marginBottom:20}}>📈 Cycle Analysis</h2>
+                  <h2 style={{fontFamily:"'Cormorant Garamond', serif",fontSize:isMobile?20:24,fontWeight:700,color:C.textDark,marginBottom:16}}>📈 Cycle Analysis</h2>
                   {/* ── FIX: guard calendar before reading .nextPeriodStart / .ovulationDay ── */}
                   {calendar ? (
                     <div style={{display:"flex",flexDirection:"column",gap:12}}>
@@ -792,7 +892,7 @@ export default function CycleTrackerPage() {
                             ["Ovulation",fmt(prediction.ovulationDay)],
                           ].map(([l,v])=>(
                             <div key={l} style={{background:C.bgLight,borderRadius:14,padding:"14px",textAlign:"center",border:`1px solid ${C.border}`}}>
-                              <p style={{fontFamily:"'Cormorant Garamond', serif",fontSize:22,fontWeight:700,color:C.primary}}>{v}</p>
+                              <p style={{fontFamily:"'Cormorant Garamond', serif",fontSize:isMobile?18:22,fontWeight:700,color:C.primary}}>{v}</p>
                               <p style={{fontFamily:"'Nunito', sans-serif",fontSize:11,color:C.textSoft,marginTop:2}}>{l}</p>
                             </div>
                           ))}
@@ -805,7 +905,7 @@ export default function CycleTrackerPage() {
                       <p style={{fontFamily:"'Nunito', sans-serif",fontSize:13,color:C.textSoft,marginBottom:14}}>
                         Cycle analysis will appear here after you log your first period.
                       </p>
-                      <button onClick={()=>setTab("log")} style={{background:C.grad,color:"#fff",border:"none",borderRadius:10,padding:"10px 20px",fontFamily:"'Nunito', sans-serif",fontSize:13,fontWeight:700,cursor:"pointer"}}>→ Log Today</button>
+                      <button onClick={()=>setTab("log")} style={{background:C.grad,color:"#fff",border:"none",borderRadius:10,padding:"10px 20px",fontFamily:"'Nunito', sans-serif",fontSize:13,fontWeight:700,cursor:"pointer",width:isMobile?"100%":"auto"}}>→ Log Today</button>
                     </div>
                   )}
                 </div>
