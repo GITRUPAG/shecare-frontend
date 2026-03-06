@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8"/>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { width: 1200px; height: 630px; overflow: hidden; }
+
+  .card {
+    width: 1200px; height: 630px;
+    background: linear-gradient(135deg, #1a0010 0%, #3d0030 40%, #6b0050 70%, #1a0010 100%);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 60px 80px;
+    position: relative;
+    font-family: 'Georgia', serif;
+    overflow: hidden;
+  }
+
+  /* Decorative circles */
+  .circle-1 {
+    position: absolute; top: -80px; right: -80px;
+    width: 360px; height: 360px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(233,30,140,0.35) 0%, transparent 70%);
+  }
+  .circle-2 {
+    position: absolute; bottom: -100px; left: -60px;
+    width: 300px; height: 300px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(233,30,140,0.2) 0%, transparent 70%);
+  }
+  .circle-3 {
+    position: absolute; top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 500px; height: 500px;
+    border-radius: 50%;
+    border: 1px solid rgba(233,30,140,0.12);
+  }
+
+  /* Petals scattered */
+  .petal { position: absolute; font-size: 1.8rem; opacity: 0.5; }
+
+  /* Left content */
+  .left { position: relative; z-index: 10; max-width: 600px; }
+
+  .womens-day-badge {
+    display: inline-block;
+    background: rgba(233,30,140,0.2);
+    border: 1px solid rgba(233,30,140,0.5);
+    border-radius: 50px;
+    padding: 8px 20px;
+    font-family: 'Arial', sans-serif;
+    font-size: 14px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: #ff8fd0;
+    margin-bottom: 28px;
+  }
+
+  .brand {
+    font-size: 68px;
+    font-weight: bold;
+    color: white;
+    line-height: 1;
+    margin-bottom: 10px;
+    letter-spacing: -1px;
+  }
+  .brand span { color: #e91e8c; }
+
+  .tagline {
+    font-size: 24px;
+    color: rgba(255,200,230,0.9);
+    font-style: italic;
+    margin-bottom: 30px;
+    line-height: 1.4;
+  }
+
+  .features {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  .feature-pill {
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 50px;
+    padding: 8px 18px;
+    font-family: 'Arial', sans-serif;
+    font-size: 14px;
+    color: rgba(255,200,230,0.85);
+  }
+
+  /* Right content */
+  .right {
+    position: relative; z-index: 10;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+  }
+
+  .icon-cluster {
+    position: relative;
+    width: 200px; height: 200px;
+  }
+  .icon-main {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 90px;
+    filter: drop-shadow(0 0 30px rgba(233,30,140,0.8));
+  }
+  .icon-orbit {
+    position: absolute;
+    font-size: 34px;
+    filter: drop-shadow(0 0 10px rgba(233,30,140,0.5));
+  }
+  .o1 { top: 0; left: 50%; transform: translateX(-50%); }
+  .o2 { top: 50%; right: 0; transform: translateY(-50%); }
+  .o3 { bottom: 10px; left: 20px; }
+  .o4 { top: 20px; left: 10px; }
+
+  .url-badge {
+    background: rgba(233,30,140,0.25);
+    border: 1.5px solid rgba(233,30,140,0.6);
+    border-radius: 50px;
+    padding: 12px 28px;
+    font-family: 'Arial', sans-serif;
+    font-size: 18px;
+    color: #ffaad8;
+    letter-spacing: 0.05em;
+  }
+
+  /* Bottom strip */
+  .bottom-strip {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 5px;
+    background: linear-gradient(90deg, #e91e8c, #ff6fc8, #f5c842, #ff6fc8, #e91e8c);
+  }
+
+  /* Date stamp */
+  .date-stamp {
+    position: absolute;
+    bottom: 28px; left: 80px;
+    font-family: 'Arial', sans-serif;
+    font-size: 14px;
+    color: rgba(255,150,210,0.6);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    z-index: 10;
+  }
+</style>
+</head>
+<body>
+<div class="card">
+  <!-- Decorative -->
+  <div class="circle-1"></div>
+  <div class="circle-2"></div>
+  <div class="circle-3"></div>
+
+  <!-- Petals -->
+  <div class="petal" style="top:8%;left:42%">🌸</div>
+  <div class="petal" style="top:15%;right:28%">🌷</div>
+  <div class="petal" style="bottom:20%;left:38%">✨</div>
+  <div class="petal" style="top:60%;right:22%">🌺</div>
+  <div class="petal" style="bottom:30%;right:36%">💮</div>
+
+  <!-- Left -->
+  <div class="left">
+    <div class="womens-day-badge">🌸 International Women's Day · March 8</div>
+    <div class="brand">She<span>Care</span></div>
+    <div class="tagline">Your personal wellness companion.<br/>Built for every woman. 💝</div>
+    <div class="features">
+      <div class="feature-pill">🌙 Cycle Tracking</div>
+      <div class="feature-pill">🎯 Health Goals</div>
+      <div class="feature-pill">✨ Self-Care</div>
+    </div>
+  </div>
+
+  <!-- Right -->
+  <div class="right">
+    <div class="icon-cluster">
+      <div class="icon-main">💝</div>
+      <div class="icon-orbit o1">🌸</div>
+      <div class="icon-orbit o2">⭐</div>
+      <div class="icon-orbit o3">🌺</div>
+      <div class="icon-orbit o4">✨</div>
+    </div>
+    <div class="url-badge">shecare.fit</div>
+  </div>
+
+  <!-- Bottom strip -->
+  <div class="bottom-strip"></div>
+  <div class="date-stamp">Launching 8th March 2025 · shecare.fit</div>
+</div>
+</body>
+</html>
