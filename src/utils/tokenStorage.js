@@ -1,11 +1,13 @@
+const TOKEN_KEY = "shecare_token";
+
 export const saveToken = (token) => {
-  localStorage.setItem("token", token);
+  localStorage.setItem(TOKEN_KEY, token);
 };
 
 export const getToken = () => {
-  return localStorage.getItem("token");
+  return localStorage.getItem(TOKEN_KEY);
 };
 
 export const removeToken = () => {
-  localStorage.removeItem("token");
+  localStorage.removeItem(TOKEN_KEY);
 };

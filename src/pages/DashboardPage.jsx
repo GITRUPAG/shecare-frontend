@@ -52,11 +52,14 @@ export default function DashboardPage() {
       const [calR, predR, insR, alertsR, riskR] = await Promise.allSettled([
         getCalendar(), getPrediction(), getPhaseInsights(), getAlerts(), getHealthRisk(),
       ]);
+
+      // NOTE: service functions already return res.data, so .value IS the data directly
       if (calR.status    === "fulfilled") setCalendar(calR.value       ?? null);
       if (predR.status   === "fulfilled") setPrediction(predR.value    ?? null);
       if (insR.status    === "fulfilled") setPhaseInsights(insR.value  ?? null);
       if (alertsR.status === "fulfilled") setAlerts(alertsR.value      || []);
       if (riskR.status   === "fulfilled") setHealthRisk(riskR.value    ?? null);
+
       setLoading(false);
     };
     fetchAll();
@@ -280,7 +283,7 @@ export default function DashboardPage() {
               })}
             </div>
 
-            {/* Legend — wraps on small screens */}
+            {/* Legend */}
             <div style={{ display:"flex", flexWrap:"wrap", gap:"10px 16px", marginTop:16, paddingTop:14, borderTop:`1px solid ${C.peachLight}` }}>
               {[
                 { label:"Period",    bg:`linear-gradient(135deg, ${C.coral}, ${C.coralDark})` },

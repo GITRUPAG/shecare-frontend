@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { saveToken } from "../utils/tokenStorage";
+import { useAuth } from "../context/AuthContext";
 
 const C = {
   pink:       "#D85E82",
@@ -18,16 +18,6 @@ const C = {
 };
 
 const API_BASE = "https://shecare-backend-1061624847334.asia-south1.run.app";
-
-async function apiLogin(identifier, password) {
-  const res = await fetch(`${API_BASE}/auth/login`, {
-    method: "POST", headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ identifier, password }),
-  });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data?.message || data?.error || "Invalid credentials.");
-  return data;
-}
 
 async function apiRegister(payload) {
   const res = await fetch(`${API_BASE}/auth/register`, {
@@ -125,8 +115,10 @@ function SocialButton({ icon, label }) {
   );
 }
 
+// ✅ FIXED: Uses context login instead of saveToken directly
 function LoginForm() {
   const navigate = useNavigate();
+  const { login } = useAuth();
   const [id, setId]           = useState("");
   const [pwd, setPwd]         = useState("");
   const [loading, setLoading] = useState(false);
@@ -137,12 +129,19 @@ function LoginForm() {
     if (!id.trim() || !pwd) { setError("Please fill in all fields."); return; }
     setLoading(true);
     try {
-      const data = await apiLogin(id.trim(), pwd);
-      saveToken(data.token);
-      localStorage.setItem("shecare_user", JSON.stringify({ name: data.name, role: data.role, username: data.username }));
+      // ✅ login() from context: calls API, saves token AND updates user state
+      const response = await login({ identifier: id.trim(), password: pwd });
+      localStorage.setItem("shecare_user", JSON.stringify({
+        name: response.name,
+        role: response.role,
+        username: response.username,
+      }));
       navigate("/dashboard");
-    } catch (err) { setError(err.message || "Unable to connect to server."); }
-    finally { setLoading(false); }
+    } catch (err) {
+      setError(err.message || "Unable to connect to server.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -171,8 +170,10 @@ function LoginForm() {
   );
 }
 
+// ✅ FIXED: After register, auto-logs in via context so isAuthenticated becomes true
 function RegisterForm() {
   const navigate = useNavigate();
+  const { login } = useAuth();
   const [form, setForm]       = useState({ username: "", email: "", phoneNumber: "", password: "" });
   const [loading, setLoading] = useState(false);
   const [error, setError]     = useState("");
@@ -182,14 +183,32 @@ function RegisterForm() {
   const submit = async () => {
     setError(""); setSuccess("");
     const { username, email, phoneNumber, password } = form;
-    if (!username.trim() || !email.trim() || !phoneNumber.trim() || !password) { setError("Please fill in all fields."); return; }
+    if (!username.trim() || !email.trim() || !phoneNumber.trim() || !password) {
+      setError("Please fill in all fields."); return;
+    }
     setLoading(true);
     try {
-      await apiRegister({ username: username.trim(), email: email.trim(), phoneNumber: phoneNumber.trim(), password });
+      // Step 1: Register the account
+      await apiRegister({
+        username: username.trim(),
+        email: email.trim(),
+        phoneNumber: phoneNumber.trim(),
+        password,
+      });
+      // Step 2: ✅ Auto-login via context so isAuthenticated updates immediately
+      const response = await login({ identifier: email.trim(), password });
+      localStorage.setItem("shecare_user", JSON.stringify({
+        name: response.name,
+        role: response.role,
+        username: response.username,
+      }));
       setSuccess("Account created! Redirecting…");
       setTimeout(() => navigate("/dashboard"), 1500);
-    } catch (err) { setError(err.message || "Unable to connect."); }
-    finally { setLoading(false); }
+    } catch (err) {
+      setError(err.message || "Unable to connect.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -220,25 +239,19 @@ function LeftPanel() {
       background: "linear-gradient(150deg, #F9EEF6 0%, #EED5F5 35%, #E0B8EC 65%, #D490C8 100%)",
       display: "flex", flexDirection: "column", padding: "44px 48px", flexShrink: 0,
     }}>
-      {/* Soft blobs */}
       <div style={{ position: "absolute", top: -100, right: -60, width: 420, height: 420, borderRadius: "50%", background: "radial-gradient(circle, rgba(216,94,130,0.22), transparent 70%)", pointerEvents: "none" }} />
       <div style={{ position: "absolute", bottom: -80, left: -60, width: 360, height: 360, borderRadius: "50%", background: "radial-gradient(circle, rgba(176,102,192,0.20), transparent 70%)", pointerEvents: "none" }} />
       <div style={{ position: "absolute", top: "45%", right: "12%", width: 200, height: 200, borderRadius: "50%", background: "radial-gradient(circle, rgba(255,255,255,0.40), transparent 70%)", pointerEvents: "none" }} />
-      {/* Decorative rings */}
       <div style={{ position: "absolute", top: 60, right: 30, width: 150, height: 150, borderRadius: "50%", border: "1px solid rgba(216,94,130,0.15)", pointerEvents: "none" }} />
       <div style={{ position: "absolute", top: 36, right: 6, width: 200, height: 200, borderRadius: "50%", border: "1px solid rgba(216,94,130,0.08)", pointerEvents: "none" }} />
       <div style={{ position: "absolute", bottom: 90, left: 30, width: 90, height: 90, borderRadius: "50%", border: "1px solid rgba(176,102,192,0.18)", pointerEvents: "none" }} />
 
-      {/* Logo */}
       <div style={{ position: "relative", zIndex: 3, display: "flex", alignItems: "center", gap: 12 }}>
         <div style={{ width: 40, height: 40, borderRadius: "50%", background: "rgba(255,255,255,0.55)", border: "1px solid rgba(216,94,130,0.25)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20 }}>🌸</div>
         <span style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 24, fontWeight: 700, color: C.pinkDark }}>SheCare</span>
       </div>
 
-      {/* Main content */}
       <div style={{ position: "relative", zIndex: 3, flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", paddingBottom: 24 }}>
-
-        {/* Trust badge */}
         <div style={{ display: "inline-flex", alignItems: "center", gap: 8, marginBottom: 22, background: "rgba(255,255,255,0.55)", borderRadius: 50, padding: "7px 16px", border: "1px solid rgba(216,94,130,0.20)", width: "fit-content", backdropFilter: "blur(8px)" }}>
           <div style={{ width: 6, height: 6, borderRadius: "50%", background: C.pink }} />
           <span style={{ fontFamily: "'Nunito', sans-serif", fontSize: 11, fontWeight: 800, color: C.pinkDark, letterSpacing: "0.8px", textTransform: "uppercase" }}>Trusted by 12,000+ Women</span>
@@ -253,7 +266,6 @@ function LeftPanel() {
           AI-powered cycle predictions, PCOS early detection, and a warm anonymous community — all in one place.
         </p>
 
-        {/* Feature cards */}
         <div style={{ display: "flex", flexDirection: "column", gap: 9, marginBottom: 32 }}>
           {[
             { icon: "🧠", text: "AI Period Prediction", sub: "94% accuracy" },
@@ -271,7 +283,6 @@ function LeftPanel() {
           ))}
         </div>
 
-        {/* Stats */}
         <div style={{ display: "flex", gap: 10 }}>
           {[["94%", "Accuracy"], ["12K+", "Women"], ["< 3min", "Screening"]].map(([v, l]) => (
             <div key={l} style={{ flex: 1, textAlign: "center", background: "rgba(255,255,255,0.50)", borderRadius: 14, padding: "14px 6px", border: "1px solid rgba(216,94,130,0.14)" }}>
