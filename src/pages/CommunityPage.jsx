@@ -61,6 +61,17 @@ const FEED_TABS = [
   { id: "my-posts",  label: "My Posts",       icon: "📝" },
 ];
 
+// ─── Responsive hook ──────────────────────────────────────────────────────────
+function useIsMobile() {
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  useEffect(() => {
+    const handler = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener("resize", handler);
+    return () => window.removeEventListener("resize", handler);
+  }, []);
+  return isMobile;
+}
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function Banner({ type, message, onClose }) {
   if (!message) return null;
@@ -491,11 +502,11 @@ function PostCard({ post, onLikeToggle, onSaveToggle, onRepostToggle, onReportSu
           : "0 2px 12px rgba(96,51,119,0.06)",
         transition: "box-shadow 0.2s",
         position: "relative",
+        width: "100%", minWidth: 0, boxSizing: "border-box", overflow: "hidden",
       }}
         onMouseEnter={e => e.currentTarget.style.boxShadow = "0 8px 28px rgba(96,51,119,0.11)"}
         onMouseLeave={e => e.currentTarget.style.boxShadow = isOwn ? `0 2px 12px ${C.primaryGlow}, inset 0 0 0 1px ${C.primary}22` : "0 2px 12px rgba(96,51,119,0.06)"}
       >
-        {/* "Your post" badge for My Posts tab */}
         {isOwn && (
           <div style={{
             position: "absolute", top: 14, right: 14,
@@ -508,10 +519,9 @@ function PostCard({ post, onLikeToggle, onSaveToggle, onRepostToggle, onReportSu
           </div>
         )}
 
-        <div style={{ padding: "22px 26px 18px 26px" }}>
+        <div style={{ padding: "18px 16px" }}>
           {error && <Banner type="error" message={error} onClose={() => setError("")} />}
 
-          {/* Header */}
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
               <div style={{ width: 38, height: 38, borderRadius: "50%", background: `linear-gradient(135deg, ${C.bgLight}, ${C.border})`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0 }}>
@@ -536,14 +546,12 @@ function PostCard({ post, onLikeToggle, onSaveToggle, onRepostToggle, onReportSu
             </div>
           </div>
 
-          {/* Title */}
           {displayTitle && (
             <h3 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 20, fontWeight: 700, color: C.textDark, marginBottom: 8, lineHeight: 1.35 }}>
               {displayTitle}
             </h3>
           )}
 
-          {/* Body */}
           {displayBody && (
             <>
               <p style={{
@@ -567,7 +575,6 @@ function PostCard({ post, onLikeToggle, onSaveToggle, onRepostToggle, onReportSu
             </div>
           )}
 
-          {/* Actions */}
           <div style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 14, paddingTop: 14, borderTop: `1px solid ${C.bgLight}`, flexWrap: "wrap" }}>
             <ActionBtn icon="❤️" label={likeCount}    onClick={handleLike}   disabled={liking}    active={post.liked} />
             <ActionBtn icon="💬" label={commentCount} onClick={() => setShowComments(v => !v)} active={showComments} />
@@ -612,6 +619,7 @@ function ActionBtn({ icon, label, onClick, disabled, active, activeColor }) {
 
 // ─── Compose Modal ────────────────────────────────────────────────────────────
 function ComposeModal({ onClose, onPosted, username }) {
+  const isMobile = useIsMobile();
   const [newPost,      setNewPost]      = useState({ title: "", body: "", category: "period", anonymous: true });
   const [mediaFile,    setMediaFile]    = useState(null);
   const [mediaType,    setMediaType]    = useState(null);
@@ -644,10 +652,10 @@ function ComposeModal({ onClose, onPosted, username }) {
   };
 
   return (
-    <div style={{ position: "fixed", inset: 0, background: "rgba(44,16,40,0.4)", backdropFilter: "blur(6px)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
-      <div style={{ background: C.white, borderRadius: 28, padding: "36px 40px", width: "100%", maxWidth: 540, boxShadow: "0 24px 80px rgba(44,16,40,0.20)", maxHeight: "90vh", overflowY: "auto" }}>
+    <div style={{ position: "fixed", inset: 0, background: "rgba(44,16,40,0.4)", backdropFilter: "blur(6px)", zIndex: 200, display: "flex", alignItems: isMobile ? "flex-end" : "center", justifyContent: "center", padding: isMobile ? 0 : 20 }}>
+      <div style={{ background: C.white, borderRadius: isMobile ? "24px 24px 0 0" : 28, padding: isMobile ? "28px 20px 36px" : "36px 40px", width: "100%", maxWidth: isMobile ? "100%" : 540, boxShadow: "0 24px 80px rgba(44,16,40,0.20)", maxHeight: isMobile ? "92vh" : "90vh", overflowY: "auto" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
-          <h2 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 28, fontWeight: 700, color: C.textDark }}>Share Your Story 🌸</h2>
+          <h2 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: isMobile ? 24 : 28, fontWeight: 700, color: C.textDark }}>Share Your Story 🌸</h2>
           <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: C.textSoft, fontSize: 22 }}>✕</button>
         </div>
 
@@ -698,7 +706,7 @@ function ComposeModal({ onClose, onPosted, username }) {
 // ─── My Posts Empty State ─────────────────────────────────────────────────────
 function MyPostsEmpty({ onCompose }) {
   return (
-    <div style={{ background: C.white, borderRadius: 22, padding: "60px 40px", textAlign: "center", border: `1.5px dashed ${C.border}` }}>
+    <div style={{ background: C.white, borderRadius: 22, padding: "40px 20px", textAlign: "center", border: `1.5px dashed ${C.border}`, width: "100%", boxSizing: "border-box" }}>
       <span style={{ fontSize: 52, display: "block", marginBottom: 16 }}>✏️</span>
       <p style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 24, fontWeight: 700, color: C.textDark, marginBottom: 8 }}>
         You haven't posted yet
@@ -717,15 +725,34 @@ function MyPostsEmpty({ onCompose }) {
   );
 }
 
+// ─── Mobile Category Scroller ─────────────────────────────────────────────────
+function MobileCategoryScroller({ cat, setCat }) {
+  return (
+    <div style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 4, scrollbarWidth: "none", WebkitOverflowScrolling: "touch" }}>
+      {CATS.map(c => (
+        <button key={c.id} onClick={() => setCat(c.id)} style={{
+          flexShrink: 0, display: "flex", alignItems: "center", gap: 5,
+          padding: "8px 14px", borderRadius: 20,
+          background: cat === c.id ? C.grad : C.white,
+          color: cat === c.id ? C.white : C.textSoft,
+          fontFamily: "'Nunito', sans-serif", fontSize: 12, fontWeight: 700,
+          cursor: "pointer", boxShadow: cat === c.id ? `0 2px 10px ${C.primaryGlow}` : `0 1px 4px rgba(0,0,0,0.06)`,
+          border: cat === c.id ? "none" : `1px solid ${C.border}`,
+        }}>
+          <span>{c.icon}</span>{c.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 // ─── CommunityPage ────────────────────────────────────────────────────────────
 export default function CommunityPage() {
+  const isMobile    = useIsMobile();
   const currentUser = JSON.parse(localStorage.getItem("shecare_user") || "{}");
   const username    = currentUser?.username || "You";
 
-  // Feed tab: "community" | "my-posts"
   const [feedTab,   setFeedTab]   = useState("community");
-
-  // Community feed state
   const [posts,     setPosts]     = useState([]);
   const [loading,   setLoading]   = useState(true);
   const [cat,       setCat]       = useState("all");
@@ -734,18 +761,16 @@ export default function CommunityPage() {
   const [hasMore,   setHasMore]   = useState(true);
   const [feedError, setFeedError] = useState("");
 
-  // My posts state
-  const [myPosts,      setMyPosts]      = useState([]);
-  const [myLoading,    setMyLoading]    = useState(false);
-  const [myError,      setMyError]      = useState("");
-  const [myLoaded,     setMyLoaded]     = useState(false); // only fetch once
+  const [myPosts,   setMyPosts]   = useState([]);
+  const [myLoading, setMyLoading] = useState(false);
+  const [myError,   setMyError]   = useState("");
+  const [myLoaded,  setMyLoaded]  = useState(false);
 
   const [compose, setCompose] = useState(false);
   const [toast,   setToast]   = useState("");
 
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(""), 3500); };
 
-  // ── Community feed loader ──────────────────────────────────────────────────
   const loadFeed = useCallback(async (category, pageNum, replace = false) => {
     setLoading(true); setFeedError("");
     try {
@@ -763,7 +788,6 @@ export default function CommunityPage() {
 
   useEffect(() => { setPage(0); loadFeed(cat, 0, true); }, [cat, loadFeed]);
 
-  // ── My posts loader — fetch on first tab switch ────────────────────────────
   const loadMyPosts = useCallback(async () => {
     setMyLoading(true); setMyError("");
     try {
@@ -779,12 +803,9 @@ export default function CommunityPage() {
   }, []);
 
   useEffect(() => {
-    if (feedTab === "my-posts" && !myLoaded) {
-      loadMyPosts();
-    }
+    if (feedTab === "my-posts" && !myLoaded) loadMyPosts();
   }, [feedTab, myLoaded, loadMyPosts]);
 
-  // ── Interaction handlers (shared for both feeds) ───────────────────────────
   const toggleInList = (setter, postId, field, countField) =>
     setter(prev => prev.map(p => p.id === postId
       ? { ...p, [field]: !p[field], [countField]: (p[countField] ?? 0) + (p[field] ? -1 : 1) }
@@ -796,7 +817,6 @@ export default function CommunityPage() {
 
   const handlePosted = (newPost) => {
     setPosts(prev => [newPost, ...prev]);
-    // Also prepend to My Posts if already loaded
     setMyPosts(prev => [newPost, ...prev]);
     setCompose(false);
     showToast("Your story has been shared! 🌸");
@@ -810,11 +830,11 @@ export default function CommunityPage() {
 
   return (
     <AppShell current="community">
-      <div style={{ padding: "32px 36px", maxWidth: 1100 }}>
+      <div style={{ padding: isMobile ? "16px 12px" : "32px 36px", maxWidth: 1100, width: "100%", boxSizing: "border-box", overflowX: "hidden" }}>
 
         {/* Toast */}
         {toast && (
-          <div style={{ position: "fixed", bottom: 28, left: "50%", transform: "translateX(-50%)", background: C.secondary, color: C.white, borderRadius: 14, padding: "12px 24px", fontFamily: "'Nunito', sans-serif", fontSize: 14, fontWeight: 700, zIndex: 999, boxShadow: "0 8px 24px rgba(0,0,0,0.15)" }}>
+          <div style={{ position: "fixed", bottom: 28, left: "50%", transform: "translateX(-50%)", background: C.secondary, color: C.white, borderRadius: 14, padding: "12px 24px", fontFamily: "'Nunito', sans-serif", fontSize: 14, fontWeight: 700, zIndex: 999, boxShadow: "0 8px 24px rgba(0,0,0,0.15)", whiteSpace: "nowrap" }}>
             {toast}
           </div>
         )}
@@ -824,48 +844,44 @@ export default function CommunityPage() {
         )}
 
         {/* Header */}
-        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 28, flexWrap: "wrap", gap: 16 }}>
+        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: isMobile ? 16 : 28, flexWrap: "wrap", gap: 12 }}>
           <div>
             <p style={{ fontFamily: "'Nunito', sans-serif", fontSize: 13, color: C.textSoft, marginBottom: 4 }}>Safe & Anonymous</p>
-            <h1 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 34, fontWeight: 700, color: C.textDark, letterSpacing: "-0.5px" }}>Community Forum</h1>
+            <h1 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: isMobile ? 26 : 34, fontWeight: 700, color: C.textDark, letterSpacing: "-0.5px" }}>Community Forum</h1>
           </div>
           <button onClick={() => setCompose(true)} style={{
             background: C.grad, color: C.white, border: "none", borderRadius: 14,
-            padding: "13px 22px", fontFamily: "'Nunito', sans-serif", fontSize: 14, fontWeight: 700,
+            padding: isMobile ? "10px 16px" : "13px 22px",
+            fontFamily: "'Nunito', sans-serif", fontSize: isMobile ? 13 : 14, fontWeight: 700,
             cursor: "pointer", boxShadow: `0 4px 16px ${C.primaryGlow}`,
             display: "flex", alignItems: "center", gap: 6,
           }}>
-            ✏️ Share Your Story
+            ✏️ {isMobile ? "Post" : "Share Your Story"}
           </button>
         </div>
 
-        {/* ── Feed Tab Switcher ── */}
+        {/* Feed Tab Switcher */}
         <div style={{
-          display: "inline-flex", background: C.bgLight,
-          borderRadius: 16, padding: 4, marginBottom: 24,
+          display: "flex", background: C.bgLight,
+          borderRadius: 16, padding: 4, marginBottom: isMobile ? 14 : 24,
           border: `1px solid ${C.border}`,
+          width: isMobile ? "100%" : "fit-content",
+          boxSizing: "border-box",
         }}>
           {FEED_TABS.map(tab => (
-            <button
-              key={tab.id}
-              onClick={() => setFeedTab(tab.id)}
-              style={{
-                display: "flex", alignItems: "center", gap: 6,
-                padding: "9px 20px", borderRadius: 12, border: "none",
-                background: feedTab === tab.id ? C.grad : "transparent",
-                color: feedTab === tab.id ? C.white : C.textSoft,
-                fontFamily: "'Nunito', sans-serif", fontSize: 13, fontWeight: 700,
-                cursor: "pointer", transition: "all 0.2s",
-                boxShadow: feedTab === tab.id ? `0 2px 10px ${C.primaryGlow}` : "none",
-              }}
-            >
+            <button key={tab.id} onClick={() => setFeedTab(tab.id)} style={{
+              display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+              padding: isMobile ? "8px 14px" : "9px 20px", borderRadius: 12, border: "none",
+              flex: isMobile ? 1 : "none",
+              background: feedTab === tab.id ? C.grad : "transparent",
+              color: feedTab === tab.id ? C.white : C.textSoft,
+              fontFamily: "'Nunito', sans-serif", fontSize: isMobile ? 12 : 13, fontWeight: 700,
+              cursor: "pointer", transition: "all 0.2s",
+              boxShadow: feedTab === tab.id ? `0 2px 10px ${C.primaryGlow}` : "none",
+            }}>
               <span>{tab.icon}</span> {tab.label}
               {tab.id === "my-posts" && myLoaded && myPosts.length > 0 && (
-                <span style={{
-                  background: feedTab === "my-posts" ? "rgba(255,255,255,0.3)" : C.primary,
-                  color: "white", borderRadius: 20, padding: "1px 7px",
-                  fontSize: 10, fontWeight: 800, marginLeft: 2,
-                }}>
+                <span style={{ background: feedTab === "my-posts" ? "rgba(255,255,255,0.3)" : C.primary, color: "white", borderRadius: 20, padding: "1px 7px", fontSize: 10, fontWeight: 800, marginLeft: 2 }}>
                   {myPosts.length}
                 </span>
               )}
@@ -873,132 +889,152 @@ export default function CommunityPage() {
           ))}
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "220px 1fr", gap: 24 }}>
-
-          {/* Sidebar — only shown on community tab */}
-          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-            {feedTab === "community" && (
-              <>
-                {/* Search */}
-                <div style={{ position: "relative" }}>
-                  <span style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", fontSize: 14 }}>🔍</span>
-                  <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search posts…"
-                    style={{ width: "100%", border: `2px solid ${C.border}`, borderRadius: 14, padding: "11px 14px 11px 36px", fontFamily: "'Nunito', sans-serif", fontSize: 13, outline: "none", color: C.textDark, background: C.white, boxSizing: "border-box" }}
-                    onFocus={e => e.target.style.borderColor = C.primary}
-                    onBlur={e  => e.target.style.borderColor = C.border} />
-                </div>
-
-                {/* Categories */}
-                <div style={{ background: C.white, borderRadius: 20, padding: "18px", border: `1px solid ${C.border}` }}>
-                  <p style={{ fontFamily: "'Nunito', sans-serif", fontSize: 10, fontWeight: 800, color: C.textSoft, textTransform: "uppercase", letterSpacing: "1px", marginBottom: 10 }}>Categories</p>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                    {CATS.map(c => (
-                      <button key={c.id} onClick={() => setCat(c.id)} style={{
-                        display: "flex", alignItems: "center", gap: 8, width: "100%",
-                        padding: "10px 12px", borderRadius: 10, border: "none",
-                        background: cat === c.id ? C.grad : "transparent",
-                        color: cat === c.id ? C.white : C.textSoft,
-                        fontFamily: "'Nunito', sans-serif", fontSize: 13, fontWeight: 700,
-                        cursor: "pointer", transition: "all 0.2s",
-                      }}>
-                        <span>{c.icon}</span>{c.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </>
-            )}
-
-            {/* Guidelines — always visible */}
-            <div style={{ background: C.bgLight, borderRadius: 18, padding: "16px 18px", border: `1px solid ${C.border}` }}>
-              <p style={{ fontFamily: "'Nunito', sans-serif", fontSize: 12, fontWeight: 800, color: C.primaryDark, marginBottom: 8 }}>🛡️ Guidelines</p>
-              {["Be kind & supportive", "Share experiences, not advice", "Posts can be anonymous or named", "Report harmful content"].map(g => (
-                <p key={g} style={{ fontFamily: "'Nunito', sans-serif", fontSize: 12, color: C.textSoft, marginBottom: 4 }}>• {g}</p>
-              ))}
+        {/* ── Mobile: category scroller + search ── */}
+        {isMobile && feedTab === "community" && (
+          <div style={{ marginBottom: 14, display: "flex", flexDirection: "column", gap: 10, width: "100%", boxSizing: "border-box" }}>
+            <div style={{ position: "relative" }}>
+              <span style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", fontSize: 14 }}>🔍</span>
+              <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search posts…"
+                style={{ width: "100%", border: `2px solid ${C.border}`, borderRadius: 14, padding: "10px 14px 10px 36px", fontFamily: "'Nunito', sans-serif", fontSize: 13, outline: "none", color: C.textDark, background: C.white, boxSizing: "border-box" }}
+                onFocus={e => e.target.style.borderColor = C.primary}
+                onBlur={e  => e.target.style.borderColor = C.border} />
             </div>
+            <MobileCategoryScroller cat={cat} setCat={setCat} />
           </div>
+        )}
 
-          {/* Feed */}
-          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-
-            {/* ── Community Feed ── */}
-            {feedTab === "community" && (
-              <>
-                <p style={{ fontFamily: "'Nunito', sans-serif", fontSize: 13, color: C.textSoft }}>
-                  <strong style={{ color: C.textDark }}>{visible.length}</strong> posts{cat !== "all" ? ` in ${CATS.find(c => c.id === cat)?.label}` : ""}
-                </p>
-
-                {feedError && <Banner type="error" message={feedError} />}
-
-                {loading && posts.length === 0 ? (
-                  <div style={{ background: C.white, borderRadius: 22, padding: "60px 40px", textAlign: "center", border: `1px solid ${C.border}` }}>
-                    <span style={{ fontSize: 40, display: "block", marginBottom: 12 }}>🌸</span>
-                    <p style={{ fontFamily: "'Nunito', sans-serif", fontSize: 14, color: C.textSoft }}>Loading posts…</p>
+        {/* ── Desktop: sidebar + feed grid ── */}
+        {!isMobile ? (
+          <div style={{ display: "grid", gridTemplateColumns: "220px 1fr", gap: 24 }}>
+            {/* Sidebar */}
+            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+              {feedTab === "community" && (
+                <>
+                  <div style={{ position: "relative" }}>
+                    <span style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", fontSize: 14 }}>🔍</span>
+                    <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search posts…"
+                      style={{ width: "100%", border: `2px solid ${C.border}`, borderRadius: 14, padding: "11px 14px 11px 36px", fontFamily: "'Nunito', sans-serif", fontSize: 13, outline: "none", color: C.textDark, background: C.white, boxSizing: "border-box" }}
+                      onFocus={e => e.target.style.borderColor = C.primary}
+                      onBlur={e  => e.target.style.borderColor = C.border} />
                   </div>
-                ) : visible.length === 0 ? (
-                  <div style={{ background: C.white, borderRadius: 22, padding: "60px 40px", textAlign: "center", border: `1px solid ${C.border}` }}>
-                    <span style={{ fontSize: 48, display: "block", marginBottom: 12 }}>🌸</span>
-                    <p style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 22, fontWeight: 700, color: C.textDark }}>No posts yet here</p>
-                    <p style={{ fontFamily: "'Nunito', sans-serif", fontSize: 14, color: C.textSoft, marginTop: 6 }}>Be the first to share your story!</p>
+                  <div style={{ background: C.white, borderRadius: 20, padding: "18px", border: `1px solid ${C.border}` }}>
+                    <p style={{ fontFamily: "'Nunito', sans-serif", fontSize: 10, fontWeight: 800, color: C.textSoft, textTransform: "uppercase", letterSpacing: "1px", marginBottom: 10 }}>Categories</p>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                      {CATS.map(c => (
+                        <button key={c.id} onClick={() => setCat(c.id)} style={{
+                          display: "flex", alignItems: "center", gap: 8, width: "100%",
+                          padding: "10px 12px", borderRadius: 10, border: "none",
+                          background: cat === c.id ? C.grad : "transparent",
+                          color: cat === c.id ? C.white : C.textSoft,
+                          fontFamily: "'Nunito', sans-serif", fontSize: 13, fontWeight: 700,
+                          cursor: "pointer", transition: "all 0.2s",
+                        }}>
+                          <span>{c.icon}</span>{c.label}
+                        </button>
+                      ))}
+                    </div>
                   </div>
-                ) : (
-                  <>
-                    {visible.map(post => (
-                      <PostCard key={post.id} post={post}
-                        onLikeToggle={handleLikeToggle}
-                        onSaveToggle={handleSaveToggle}
-                        onRepostToggle={handleRepostToggle}
-                        onReportSuccess={msg => showToast(msg)}
-                        currentUsername={username}
-                      />
-                    ))}
-                    {hasMore && (
-                      <button onClick={() => { const next = page + 1; setPage(next); loadFeed(cat, next, false); }} disabled={loading}
-                        style={{ border: `2px solid ${C.border}`, borderRadius: 14, padding: "13px", background: C.white, fontFamily: "'Nunito', sans-serif", fontSize: 14, fontWeight: 700, color: C.textMid, cursor: loading ? "not-allowed" : "pointer" }}>
-                        {loading ? "Loading…" : "Load more posts"}
-                      </button>
-                    )}
-                  </>
-                )}
-              </>
-            )}
+                </>
+              )}
+              <div style={{ background: C.bgLight, borderRadius: 18, padding: "16px 18px", border: `1px solid ${C.border}` }}>
+                <p style={{ fontFamily: "'Nunito', sans-serif", fontSize: 12, fontWeight: 800, color: C.primaryDark, marginBottom: 8 }}>🛡️ Guidelines</p>
+                {["Be kind & supportive", "Share experiences, not advice", "Posts can be anonymous or named", "Report harmful content"].map(g => (
+                  <p key={g} style={{ fontFamily: "'Nunito', sans-serif", fontSize: 12, color: C.textSoft, marginBottom: 4 }}>• {g}</p>
+                ))}
+              </div>
+            </div>
 
-            {/* ── My Posts Feed ── */}
-            {feedTab === "my-posts" && (
-              <>
-                {myError && <Banner type="error" message={myError} onClose={() => setMyError("")} />}
-
-                {myLoading ? (
-                  <div style={{ background: C.white, borderRadius: 22, padding: "60px 40px", textAlign: "center", border: `1px solid ${C.border}` }}>
-                    <span style={{ fontSize: 40, display: "block", marginBottom: 12 }}>✏️</span>
-                    <p style={{ fontFamily: "'Nunito', sans-serif", fontSize: 14, color: C.textSoft }}>Loading your posts…</p>
-                  </div>
-                ) : myPosts.length === 0 ? (
-                  <MyPostsEmpty onCompose={() => setCompose(true)} />
-                ) : (
-                  <>
-                    <p style={{ fontFamily: "'Nunito', sans-serif", fontSize: 13, color: C.textSoft }}>
-                      <strong style={{ color: C.textDark }}>{myPosts.length}</strong> post{myPosts.length !== 1 ? "s" : ""} shared by you
-                    </p>
-                    {myPosts.map(post => (
-                      <PostCard
-                        key={post.id}
-                        post={post}
-                        onLikeToggle={handleLikeToggle}
-                        onSaveToggle={handleSaveToggle}
-                        onRepostToggle={handleRepostToggle}
-                        onReportSuccess={msg => showToast(msg)}
-                        currentUsername={username}
-                        isOwn={true}
-                      />
-                    ))}
-                  </>
-                )}
-              </>
-            )}
+            {/* Feed */}
+            <FeedContent
+              feedTab={feedTab} visible={visible} loading={loading} hasMore={hasMore}
+              page={page} setPage={setPage} loadFeed={loadFeed} cat={cat}
+              feedError={feedError} myPosts={myPosts} myLoading={myLoading} myError={myError}
+              setMyError={setMyError} handleLikeToggle={handleLikeToggle}
+              handleSaveToggle={handleSaveToggle} handleRepostToggle={handleRepostToggle}
+              showToast={showToast} username={username} setCompose={setCompose}
+            />
           </div>
-        </div>
+        ) : (
+          /* ── Mobile: full width feed ── */
+          <FeedContent
+            feedTab={feedTab} visible={visible} loading={loading} hasMore={hasMore}
+            page={page} setPage={setPage} loadFeed={loadFeed} cat={cat}
+            feedError={feedError} myPosts={myPosts} myLoading={myLoading} myError={myError}
+            setMyError={setMyError} handleLikeToggle={handleLikeToggle}
+            handleSaveToggle={handleSaveToggle} handleRepostToggle={handleRepostToggle}
+            showToast={showToast} username={username} setCompose={setCompose}
+          />
+        )}
       </div>
     </AppShell>
+  );
+}
+
+// ─── Extracted feed content (shared between mobile/desktop) ──────────────────
+function FeedContent({ feedTab, visible, loading, hasMore, page, setPage, loadFeed, cat, feedError, myPosts, myLoading, myError, setMyError, handleLikeToggle, handleSaveToggle, handleRepostToggle, showToast, username, setCompose }) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 16, width: "100%", minWidth: 0 }}>
+      {feedTab === "community" && (
+        <>
+          <p style={{ fontFamily: "'Nunito', sans-serif", fontSize: 13, color: C.textSoft }}>
+            <strong style={{ color: C.textDark }}>{visible.length}</strong> posts
+          </p>
+          {feedError && <Banner type="error" message={feedError} />}
+          {loading && visible.length === 0 ? (
+            <div style={{ background: C.white, borderRadius: 22, padding: "40px 20px", textAlign: "center", border: `1px solid ${C.border}` }}>
+              <span style={{ fontSize: 40, display: "block", marginBottom: 12 }}>🌸</span>
+              <p style={{ fontFamily: "'Nunito', sans-serif", fontSize: 14, color: C.textSoft }}>Loading posts…</p>
+            </div>
+          ) : visible.length === 0 ? (
+            <div style={{ background: C.white, borderRadius: 22, padding: "40px 20px", textAlign: "center", border: `1px solid ${C.border}` }}>
+              <span style={{ fontSize: 48, display: "block", marginBottom: 12 }}>🌸</span>
+              <p style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 22, fontWeight: 700, color: C.textDark }}>No posts yet here</p>
+              <p style={{ fontFamily: "'Nunito', sans-serif", fontSize: 14, color: C.textSoft, marginTop: 6 }}>Be the first to share your story!</p>
+            </div>
+          ) : (
+            <>
+              {visible.map(post => (
+                <PostCard key={post.id} post={post}
+                  onLikeToggle={handleLikeToggle} onSaveToggle={handleSaveToggle}
+                  onRepostToggle={handleRepostToggle} onReportSuccess={msg => showToast(msg)}
+                  currentUsername={username} />
+              ))}
+              {hasMore && (
+                <button onClick={() => { const next = page + 1; setPage(next); loadFeed(cat, next, false); }} disabled={loading}
+                  style={{ border: `2px solid ${C.border}`, borderRadius: 14, padding: "13px", background: C.white, fontFamily: "'Nunito', sans-serif", fontSize: 14, fontWeight: 700, color: C.textMid, cursor: loading ? "not-allowed" : "pointer" }}>
+                  {loading ? "Loading…" : "Load more posts"}
+                </button>
+              )}
+            </>
+          )}
+        </>
+      )}
+
+      {feedTab === "my-posts" && (
+        <>
+          {myError && <Banner type="error" message={myError} onClose={() => setMyError("")} />}
+          {myLoading ? (
+            <div style={{ background: C.white, borderRadius: 22, padding: "60px 40px", textAlign: "center", border: `1px solid ${C.border}` }}>
+              <span style={{ fontSize: 40, display: "block", marginBottom: 12 }}>✏️</span>
+              <p style={{ fontFamily: "'Nunito', sans-serif", fontSize: 14, color: C.textSoft }}>Loading your posts…</p>
+            </div>
+          ) : myPosts.length === 0 ? (
+            <MyPostsEmpty onCompose={() => setCompose(true)} />
+          ) : (
+            <>
+              <p style={{ fontFamily: "'Nunito', sans-serif", fontSize: 13, color: C.textSoft }}>
+                <strong style={{ color: C.textDark }}>{myPosts.length}</strong> post{myPosts.length !== 1 ? "s" : ""} shared by you
+              </p>
+              {myPosts.map(post => (
+                <PostCard key={post.id} post={post}
+                  onLikeToggle={handleLikeToggle} onSaveToggle={handleSaveToggle}
+                  onRepostToggle={handleRepostToggle} onReportSuccess={msg => showToast(msg)}
+                  currentUsername={username} isOwn={true} />
+              ))}
+            </>
+          )}
+        </>
+      )}
+    </div>
   );
 }
