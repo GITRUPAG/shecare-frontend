@@ -259,7 +259,6 @@ export default function PCOSPage() {
   const [view,         setView]         = useState("loading");
   const [autoResult,   setAutoResult]   = useState(null);
   const [manualResult, setManualResult] = useState(null);
-  const [cycleData,    setCycleData]    = useState(null);
   const [symptoms,     setSymptoms]     = useState({ weight_gain: 0, hair_growth: 0, skin_darkening: 0, pimples: 0 });
   const [error,        setError]        = useState("");
   const [autoError,    setAutoError]    = useState("");
@@ -271,7 +270,6 @@ export default function PCOSPage() {
     (async () => {
       try {
         const pred = await getPeriodPrediction();
-        setCycleData(pred);
         if (!pred) {
           setAutoError("Log your period to enable automatic PCOS assessment.");
         }
