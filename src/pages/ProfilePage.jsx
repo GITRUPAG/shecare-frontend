@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { AppShell } from "../components/Layout";
 import { getProfile, updateProfile, uploadProfileImage } from "../api/profileService";
+import { removeToken } from "../utils/tokenStorage";
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
 const C = {
@@ -136,10 +137,10 @@ export default function ProfilePage() {
 
   // ── Sign out ─────────────────────────────────────────────────────────────
   const handleSignOut = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("shecare_user");
-    navigate("/login");
-  };
+  removeToken();                           // removes "shecare_token"
+  localStorage.removeItem("shecare_user");
+  navigate("/login");
+};
 
   const card = { background: C.white, borderRadius: 24, padding: "28px 32px", border: `1px solid ${C.border}`, boxShadow: "0 2px 16px rgba(96,51,119,0.07)" };
 
