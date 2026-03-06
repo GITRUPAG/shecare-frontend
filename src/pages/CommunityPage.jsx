@@ -60,9 +60,10 @@ const MAX_FILE_MB    = 50;
 
 // ─── Feed Tabs ────────────────────────────────────────────────────────────────
 const FEED_TABS = [
-  { id: "community",  label: "Community Feed", icon: "🌸" },
-  { id: "my-posts",   label: "My Posts",       icon: "📝" },
-  { id: "bookmarks",  label: "Bookmarks",      icon: "🔖" },
+  { id: "community", label: "Community Feed", icon: "🌸" },
+  { id: "my-posts",  label: "My Posts",       icon: "📝" },
+  { id: "reposts",   label: "Reposts",        icon: "🔁" },
+  { id: "bookmarks", label: "Bookmarks",      icon: "🔖" },
 ];
 
 // ─── Responsive hook ──────────────────────────────────────────────────────────
@@ -528,7 +529,7 @@ function EditModal({ post, onClose, onSaved, username }) {
 }
 
 // ─── Post Card ────────────────────────────────────────────────────────────────
-function PostCard({ post, onLikeToggle, onSaveToggle, onRepostToggle, onReportSuccess, onDeleted, onEdited, currentUsername, isOwn }) {
+function PostCard({ post, onLikeToggle, onSaveToggle, onRepostToggle, onReportSuccess, onDeleted, onEdited, currentUsername, isOwn, isRepost }) {
   const [expanded,     setExpanded]     = useState(false);
   const [showComments, setShowComments] = useState(false);
   const [liking,       setLiking]       = useState(false);
@@ -617,7 +618,15 @@ function PostCard({ post, onLikeToggle, onSaveToggle, onRepostToggle, onReportSu
         onMouseEnter={e => e.currentTarget.style.boxShadow = "0 8px 28px rgba(96,51,119,0.11)"}
         onMouseLeave={e => e.currentTarget.style.boxShadow = isOwn ? `0 2px 12px ${C.primaryGlow}, inset 0 0 0 1px ${C.primary}22` : "0 2px 12px rgba(96,51,119,0.06)"}
       >
-        {/* Own post badge + Edit/Delete actions */}
+        {/* ── Repost banner ── */}
+        {isRepost && (
+          <div style={{ background: "#F0FDF4", borderBottom: "1px solid #BBF7D0", padding: "7px 16px", display: "flex", alignItems: "center", gap: 6 }}>
+            <span style={{ fontSize: 13 }}>🔁</span>
+            <span style={{ fontFamily: "'Nunito', sans-serif", fontSize: 12, fontWeight: 700, color: "#16A34A" }}>You reposted this</span>
+          </div>
+        )}
+
+        {/* Own post Edit/Delete actions */}
         {isOwn && (
           <div style={{ position: "absolute", top: 14, right: 14, display: "flex", alignItems: "center", gap: 6, zIndex: 1 }}>
             <button onClick={() => setShowEdit(true)} title="Edit post" style={{ background: "rgba(255,255,255,0.9)", border: `1px solid ${C.border}`, borderRadius: 8, padding: "4px 10px", fontFamily: "'Nunito', sans-serif", fontSize: 11, fontWeight: 700, color: C.textMid, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
@@ -640,6 +649,9 @@ function PostCard({ post, onLikeToggle, onSaveToggle, onRepostToggle, onReportSu
               <div>
                 <p style={{ fontFamily: "'Nunito', sans-serif", fontSize: 13, fontWeight: 700, color: C.textDark }}>
                   {post.anonymous ? "Anonymous" : post.username}
+                  {isOwn && !isRepost && (
+                    <span style={{ marginLeft: 6, fontFamily: "'Nunito', sans-serif", fontSize: 10, fontWeight: 800, background: C.bgLight, color: C.primaryDark, borderRadius: 20, padding: "2px 8px" }}>You</span>
+                  )}
                 </p>
                 <p style={{ fontFamily: "'Nunito', sans-serif", fontSize: 11, color: C.textSoft }}>
                   {post.createdAt ? new Date(post.createdAt).toLocaleString([], { dateStyle: "medium", timeStyle: "short" }) : post.time}
@@ -842,6 +854,19 @@ function BookmarksEmpty() {
   );
 }
 
+// ─── Reposts empty state ──────────────────────────────────────────────────────
+function RepostsEmpty() {
+  return (
+    <div style={{ background: C.white, borderRadius: 22, padding: "40px 20px", textAlign: "center", border: `1.5px dashed ${C.border}`, width: "100%", boxSizing: "border-box" }}>
+      <span style={{ fontSize: 52, display: "block", marginBottom: 16 }}>🔁</span>
+      <p style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 24, fontWeight: 700, color: C.textDark, marginBottom: 8 }}>No reposts yet</p>
+      <p style={{ fontFamily: "'Nunito', sans-serif", fontSize: 14, color: C.textSoft, maxWidth: 320, margin: "0 auto" }}>
+        Posts you repost will appear here. Hit 🔁 on any post to reshare it!
+      </p>
+    </div>
+  );
+}
+
 // ─── Mobile Category Scroller ─────────────────────────────────────────────────
 function MobileCategoryScroller({ cat, setCat }) {
   return (
@@ -882,6 +907,12 @@ export default function CommunityPage() {
   const [myLoading, setMyLoading] = useState(false);
   const [myError,   setMyError]   = useState("");
   const [myLoaded,  setMyLoaded]  = useState(false);
+
+  // ── Reposts ───────────────────────────────────────────────────────────────
+  const [reposts,   setReposts]   = useState([]);
+  const [rpLoading, setRpLoading] = useState(false);
+  const [rpError,   setRpError]   = useState("");
+  const [rpLoaded,  setRpLoaded]  = useState(false);
 
   const [bookmarks,    setBookmarks]    = useState([]);
   const [bmLoading,    setBmLoading]    = useState(false);
@@ -924,6 +955,26 @@ export default function CommunityPage() {
     finally { setMyLoading(false); }
   }, []);
 
+  // Reposts are tracked locally. On tab open, scan the feed for posts the
+  // backend already marks as reposted (repostedByMe flag). After that,
+  // handleRepostToggle keeps the list in sync in real time.
+  const loadReposts = useCallback(async () => {
+    setRpLoading(true); setRpError("");
+    try {
+      const data = await getFeed(undefined, undefined, 0);
+      const mine = data
+        .filter(p => p.repostedByMe === true || p.reposted === true)
+        .map(p => ({
+          ...p, tag: catToTag(p.category), avatar: "🌸",
+          liked: false, saved: false, reposted: true,
+          mediaUrl: p.mediaUrls?.[0] ?? null, mediaType: p.mediaType ?? null,
+        }));
+      setReposts(mine);
+      setRpLoaded(true);
+    } catch { setRpError("Could not load reposts."); }
+    finally { setRpLoading(false); }
+  }, []);
+
   const loadBookmarks = useCallback(async () => {
     setBmLoading(true); setBmError("");
     try {
@@ -940,27 +991,53 @@ export default function CommunityPage() {
 
   useEffect(() => {
     if (feedTab === "my-posts"  && !myLoaded) loadMyPosts();
+    if (feedTab === "reposts"   && !rpLoaded) loadReposts();
     if (feedTab === "bookmarks" && !bmLoaded) loadBookmarks();
-  }, [feedTab, myLoaded, bmLoaded, loadMyPosts, loadBookmarks]);
+  }, [feedTab, myLoaded, rpLoaded, bmLoaded, loadMyPosts, loadReposts, loadBookmarks]);
 
   const toggleInList = (setter, postId, field, countField) =>
     setter(prev => prev.map(p => p.id === postId
       ? { ...p, [field]: !p[field], [countField]: (p[countField] ?? 0) + (p[field] ? -1 : 1) }
       : p));
 
-  const handleLikeToggle   = postId => { toggleInList(setPosts, postId, "liked", "likeCount"); toggleInList(setMyPosts, postId, "liked", "likeCount"); toggleInList(setBookmarks, postId, "liked", "likeCount"); };
-  const handleSaveToggle   = postId => {
-    setPosts(prev => prev.map(p => p.id === postId ? { ...p, saved: !p.saved } : p));
-    setMyPosts(prev => prev.map(p => p.id === postId ? { ...p, saved: !p.saved } : p));
+  const handleLikeToggle = postId => {
+    toggleInList(setPosts,     postId, "liked", "likeCount");
+    toggleInList(setMyPosts,   postId, "liked", "likeCount");
+    toggleInList(setReposts,   postId, "liked", "likeCount");
+    toggleInList(setBookmarks, postId, "liked", "likeCount");
+  };
+
+  const handleSaveToggle = postId => {
+    setPosts(prev     => prev.map(p => p.id === postId ? { ...p, saved: !p.saved } : p));
+    setMyPosts(prev   => prev.map(p => p.id === postId ? { ...p, saved: !p.saved } : p));
+    setReposts(prev   => prev.map(p => p.id === postId ? { ...p, saved: !p.saved } : p));
     // Remove from bookmarks list when unsaved
     setBookmarks(prev => prev.filter(p => p.id !== postId));
     setBmLoaded(false); // refresh next time bookmarks tab is opened
   };
-  const handleRepostToggle = postId => { toggleInList(setPosts, postId, "reposted", "repostCount"); toggleInList(setMyPosts, postId, "reposted", "repostCount"); toggleInList(setBookmarks, postId, "reposted", "repostCount"); };
+
+  const handleRepostToggle = postId => {
+    toggleInList(setPosts,     postId, "reposted", "repostCount");
+    toggleInList(setMyPosts,   postId, "reposted", "repostCount");
+    toggleInList(setBookmarks, postId, "reposted", "repostCount");
+
+    // Keep reposts list in sync in real time
+    const alreadyInReposts = reposts.some(p => p.id === postId);
+    if (alreadyInReposts) {
+      setReposts(prev => prev.filter(p => p.id !== postId));
+    } else {
+      const source =
+        posts.find(p => p.id === postId) ||
+        myPosts.find(p => p.id === postId) ||
+        bookmarks.find(p => p.id === postId);
+      if (source) setReposts(prev => [{ ...source, reposted: true }, ...prev]);
+    }
+  };
 
   const handleDeleted = (postId) => {
-    setPosts(prev => prev.filter(p => p.id !== postId));
-    setMyPosts(prev => prev.filter(p => p.id !== postId));
+    setPosts(prev     => prev.filter(p => p.id !== postId));
+    setMyPosts(prev   => prev.filter(p => p.id !== postId));
+    setReposts(prev   => prev.filter(p => p.id !== postId));
     setBookmarks(prev => prev.filter(p => p.id !== postId));
     showToast("Post deleted. 🗑️");
   };
@@ -969,12 +1046,13 @@ export default function CommunityPage() {
     const applyEdit = prev => prev.map(p => p.id === updated.id ? updated : p);
     setPosts(applyEdit);
     setMyPosts(applyEdit);
+    setReposts(applyEdit);
     setBookmarks(applyEdit);
     showToast("Post updated! ✏️");
   };
 
   const handlePosted = (newPost) => {
-    setPosts(prev => [newPost, ...prev]);
+    setPosts(prev   => [newPost, ...prev]);
     setMyPosts(prev => [newPost, ...prev]);
     setCompose(false);
     showToast("Your story has been shared! 🌸");
@@ -985,6 +1063,10 @@ export default function CommunityPage() {
     (p.title ?? "").toLowerCase().includes(search.toLowerCase()) ||
     (p.body ?? p.content ?? "").toLowerCase().includes(search.toLowerCase())
   );
+
+  // Posts by the current user in the community feed get Edit/Delete controls
+  const isOwnPost = (post) =>
+    !post.anonymous && post.username && post.username === username;
 
   return (
     <AppShell current="community">
@@ -1025,22 +1107,32 @@ export default function CommunityPage() {
           border: `1px solid ${C.border}`,
           width: isMobile ? "100%" : "fit-content",
           boxSizing: "border-box",
+          overflowX: isMobile ? "auto" : "visible",
+          scrollbarWidth: "none",
+          WebkitOverflowScrolling: "touch",
         }}>
           {FEED_TABS.map(tab => (
             <button key={tab.id} onClick={() => setFeedTab(tab.id)} style={{
               display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
               padding: isMobile ? "8px 10px" : "9px 20px", borderRadius: 12, border: "none",
               flex: isMobile ? 1 : "none",
+              flexShrink: 0,
               background: feedTab === tab.id ? C.grad : "transparent",
               color: feedTab === tab.id ? C.white : C.textSoft,
-              fontFamily: "'Nunito', sans-serif", fontSize: isMobile ? 11 : 13, fontWeight: 700,
+              fontFamily: "'Nunito', sans-serif", fontSize: isMobile ? 10 : 13, fontWeight: 700,
               cursor: "pointer", transition: "all 0.2s",
               boxShadow: feedTab === tab.id ? `0 2px 10px ${C.primaryGlow}` : "none",
+              whiteSpace: "nowrap",
             }}>
-              <span>{tab.icon}</span> {tab.label}
+              <span>{tab.icon}</span> {isMobile ? tab.label.split(" ")[0] : tab.label}
               {tab.id === "my-posts" && myLoaded && myPosts.length > 0 && (
                 <span style={{ background: feedTab === "my-posts" ? "rgba(255,255,255,0.3)" : C.primary, color: "white", borderRadius: 20, padding: "1px 7px", fontSize: 10, fontWeight: 800, marginLeft: 2 }}>
                   {myPosts.length}
+                </span>
+              )}
+              {tab.id === "reposts" && rpLoaded && reposts.length > 0 && (
+                <span style={{ background: feedTab === "reposts" ? "rgba(255,255,255,0.3)" : C.primary, color: "white", borderRadius: 20, padding: "1px 7px", fontSize: 10, fontWeight: 800, marginLeft: 2 }}>
+                  {reposts.length}
                 </span>
               )}
               {tab.id === "bookmarks" && bmLoaded && bookmarks.length > 0 && (
@@ -1112,12 +1204,13 @@ export default function CommunityPage() {
               feedTab={feedTab} visible={visible} loading={loading} hasMore={hasMore}
               page={page} setPage={setPage} loadFeed={loadFeed} cat={cat}
               feedError={feedError} myPosts={myPosts} myLoading={myLoading} myError={myError}
-              setMyError={setMyError} bookmarks={bookmarks} bmLoading={bmLoading}
-              bmError={bmError} setBmError={setBmError}
+              setMyError={setMyError}
+              reposts={reposts} rpLoading={rpLoading} rpError={rpError} setRpError={setRpError}
+              bookmarks={bookmarks} bmLoading={bmLoading} bmError={bmError} setBmError={setBmError}
               handleLikeToggle={handleLikeToggle} handleSaveToggle={handleSaveToggle}
               handleRepostToggle={handleRepostToggle} handleDeleted={handleDeleted}
               handleEdited={handleEdited} showToast={showToast} username={username}
-              setCompose={setCompose}
+              setCompose={setCompose} isOwnPost={isOwnPost}
             />
           </div>
         ) : (
@@ -1125,12 +1218,13 @@ export default function CommunityPage() {
             feedTab={feedTab} visible={visible} loading={loading} hasMore={hasMore}
             page={page} setPage={setPage} loadFeed={loadFeed} cat={cat}
             feedError={feedError} myPosts={myPosts} myLoading={myLoading} myError={myError}
-            setMyError={setMyError} bookmarks={bookmarks} bmLoading={bmLoading}
-            bmError={bmError} setBmError={setBmError}
+            setMyError={setMyError}
+            reposts={reposts} rpLoading={rpLoading} rpError={rpError} setRpError={setRpError}
+            bookmarks={bookmarks} bmLoading={bmLoading} bmError={bmError} setBmError={setBmError}
             handleLikeToggle={handleLikeToggle} handleSaveToggle={handleSaveToggle}
             handleRepostToggle={handleRepostToggle} handleDeleted={handleDeleted}
             handleEdited={handleEdited} showToast={showToast} username={username}
-            setCompose={setCompose}
+            setCompose={setCompose} isOwnPost={isOwnPost}
           />
         )}
       </div>
@@ -1142,9 +1236,11 @@ export default function CommunityPage() {
 function FeedContent({
   feedTab, visible, loading, hasMore, page, setPage, loadFeed, cat,
   feedError, myPosts, myLoading, myError, setMyError,
+  reposts, rpLoading, rpError, setRpError,
   bookmarks, bmLoading, bmError, setBmError,
   handleLikeToggle, handleSaveToggle, handleRepostToggle,
   handleDeleted, handleEdited, showToast, username, setCompose,
+  isOwnPost,
 }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16, width: "100%", minWidth: 0 }}>
@@ -1174,7 +1270,9 @@ function FeedContent({
                   onLikeToggle={handleLikeToggle} onSaveToggle={handleSaveToggle}
                   onRepostToggle={handleRepostToggle} onReportSuccess={msg => showToast(msg)}
                   onDeleted={handleDeleted} onEdited={handleEdited}
-                  currentUsername={username} />
+                  currentUsername={username}
+                  isOwn={isOwnPost(post)}
+                />
               ))}
               {hasMore && (
                 <button onClick={() => { const next = page + 1; setPage(next); loadFeed(cat, next, false); }} disabled={loading}
@@ -1209,6 +1307,34 @@ function FeedContent({
                   onRepostToggle={handleRepostToggle} onReportSuccess={msg => showToast(msg)}
                   onDeleted={handleDeleted} onEdited={handleEdited}
                   currentUsername={username} isOwn={true} />
+              ))}
+            </>
+          )}
+        </>
+      )}
+
+      {/* ── Reposts ── */}
+      {feedTab === "reposts" && (
+        <>
+          {rpError && <Banner type="error" message={rpError} onClose={() => setRpError("")} />}
+          {rpLoading ? (
+            <div style={{ background: C.white, borderRadius: 22, padding: "60px 40px", textAlign: "center", border: `1px solid ${C.border}` }}>
+              <span style={{ fontSize: 40, display: "block", marginBottom: 12 }}>🔁</span>
+              <p style={{ fontFamily: "'Nunito', sans-serif", fontSize: 14, color: C.textSoft }}>Loading reposts…</p>
+            </div>
+          ) : reposts.length === 0 ? (
+            <RepostsEmpty />
+          ) : (
+            <>
+              <p style={{ fontFamily: "'Nunito', sans-serif", fontSize: 13, color: C.textSoft }}>
+                <strong style={{ color: C.textDark }}>{reposts.length}</strong> post{reposts.length !== 1 ? "s" : ""} reposted by you
+              </p>
+              {reposts.map(post => (
+                <PostCard key={post.id} post={post}
+                  onLikeToggle={handleLikeToggle} onSaveToggle={handleSaveToggle}
+                  onRepostToggle={handleRepostToggle} onReportSuccess={msg => showToast(msg)}
+                  onDeleted={handleDeleted} onEdited={handleEdited}
+                  currentUsername={username} isRepost={true} />
               ))}
             </>
           )}
