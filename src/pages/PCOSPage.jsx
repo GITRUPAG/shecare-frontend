@@ -251,6 +251,68 @@ function ResultPanel({ result, isAuto, onRefine, onRetake, showRefineBtn }) {
   );
 }
 
+// ─── Actionable error banner ──────────────────────────────────────────────────
+function DataRequiredBanner({ message, onGoToProfile, onGoToTracker }) {
+  return (
+    <div style={{
+      background: "#FFFBEB",
+      border: "1.5px solid #FCD34D",
+      borderRadius: 18,
+      padding: "20px 22px",
+      marginBottom: 20,
+      boxSizing: "border-box",
+    }}>
+      <p style={{
+        fontFamily: "'Nunito', sans-serif", fontSize: 14, fontWeight: 800,
+        color: "#92400E", marginBottom: 12,
+      }}>
+        ⚠️ {message}
+      </p>
+
+      <p style={{
+        fontFamily: "'Nunito', sans-serif", fontSize: 13, fontWeight: 700,
+        color: "#78350F", marginBottom: 10,
+      }}>
+        To run PCOS risk assessment, please:
+      </p>
+
+      <ul style={{ margin: "0 0 18px 0", padding: "0 0 0 4px", listStyle: "none" }}>
+        {[
+          "Add your age, height, and weight in Profile",
+          "Log at least one period cycle",
+        ].map((item) => (
+          <li key={item} style={{
+            display: "flex", alignItems: "flex-start", gap: 8,
+            marginBottom: 7,
+            fontFamily: "'Nunito', sans-serif", fontSize: 13, color: "#92400E", lineHeight: 1.55,
+          }}>
+            <span style={{ color: "#D97706", marginTop: 1 }}>•</span>
+            {item}
+          </li>
+        ))}
+      </ul>
+
+      <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+        <button onClick={onGoToProfile} style={{
+          background: C.grad, color: C.white, border: "none", borderRadius: 10,
+          padding: "10px 20px", fontFamily: "'Nunito', sans-serif", fontSize: 13, fontWeight: 700,
+          cursor: "pointer", boxShadow: `0 4px 14px ${C.primaryGlow}`,
+        }}>
+          👤 Complete Profile
+        </button>
+        <button onClick={onGoToTracker} style={{
+          background: C.white, color: C.textMid,
+          border: `2px solid ${C.border}`, borderRadius: 10,
+          padding: "10px 20px", fontFamily: "'Nunito', sans-serif", fontSize: 13, fontWeight: 700,
+          cursor: "pointer",
+        }}>
+          🩸 Log Period
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // ─── PCOSPage ─────────────────────────────────────────────────────────────────
 export default function PCOSPage() {
   const isMobile = useIsMobile();
@@ -269,15 +331,15 @@ export default function PCOSPage() {
   useEffect(() => {
     (async () => {
       try {
-        const pred = await getPeriodPrediction();
-        if (!pred) {
-          setAutoError("Log your period to enable automatic PCOS assessment.");
-        }
         const res = await predictPCOS();
         setAutoResult(res);
         setView("result");
-      } catch (e) {
-        setAutoError("We couldn't auto-assess (no cycle data yet). You can manually enter symptoms below.");
+      } catch (err) {
+        const msg =
+          err?.response?.data?.message ||
+          "We need more health data before running this assessment.";
+
+        setAutoError(msg);
         setView("landing");
       }
     })();
@@ -341,11 +403,16 @@ export default function PCOSPage() {
               <p style={{ fontFamily: "'Nunito', sans-serif", fontSize: 14, color: C.textSoft, lineHeight: 1.75, marginBottom: 20 }}>
                 Polycystic Ovary Syndrome affects 1 in 10 women of reproductive age. Our ML model can give you an instant risk profile based on a few simple questions.
               </p>
+
+              {/* ── Actionable error banner replaces the old plain text warning ── */}
               {autoError && (
-                <div style={{ background: "#FFFBEB", border: "1px solid #FCD34D", borderRadius: 12, padding: "10px 14px", marginBottom: 18, fontFamily: "'Nunito', sans-serif", fontSize: 12, color: "#92400E" }}>
-                  ⚠️ {autoError}
-                </div>
+                <DataRequiredBanner
+                  message={autoError}
+                  onGoToProfile={() => navigate("/profile")}
+                  onGoToTracker={() => navigate("/tracker")}
+                />
               )}
+
               <button onClick={() => setView("refine")} style={{
                 width: "100%", background: C.grad, color: C.white, border: "none", borderRadius: 14,
                 padding: "15px", fontFamily: "'Nunito', sans-serif", fontSize: 15, fontWeight: 700,
