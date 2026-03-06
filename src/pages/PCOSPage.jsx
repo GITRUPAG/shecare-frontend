@@ -1,4 +1,4 @@
-import { useState, useEffect} from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { AppShell } from "../components/Layout";
 import { predictPCOS, getPeriodPrediction } from "../api/periodService";
@@ -45,10 +45,10 @@ const resolveRisk = (apiRes) => {
 
 // ─── Symptom questions (yes/no) ───────────────────────────────────────────────
 const SYMPTOMS = [
-  { key: "weight_gain",    icon: "⚖️", label: "Unexplained weight gain",            hint: "Gained weight without a clear dietary change" },
-  { key: "hair_growth",    icon: "🌿", label: "Excess facial / body hair",           hint: "Hair on face, chest or back beyond what's normal for you" },
-  { key: "skin_darkening", icon: "🩺", label: "Dark skin patches",                  hint: "Darkening on neck, armpits or groin (acanthosis nigricans)" },
-  { key: "pimples",        icon: "✨", label: "Persistent acne or oily skin",        hint: "Hormonal acne, especially along the chin and jaw" },
+  { key: "weight_gain",    icon: "⚖️", label: "Unexplained weight gain",       hint: "Gained weight without a clear dietary change" },
+  { key: "hair_growth",    icon: "🌿", label: "Excess facial / body hair",      hint: "Hair on face, chest or back beyond what's normal for you" },
+  { key: "skin_darkening", icon: "🩺", label: "Dark skin patches",             hint: "Darkening on neck, armpits or groin (acanthosis nigricans)" },
+  { key: "pimples",        icon: "✨", label: "Persistent acne or oily skin",   hint: "Hormonal acne, especially along the chin and jaw" },
 ];
 
 // ─── Responsive hook ──────────────────────────────────────────────────────────
@@ -143,11 +143,11 @@ function SymptomToggle({ symptom, value, onChange }) {
 // ─── Result panel ─────────────────────────────────────────────────────────────
 function ResultPanel({ result, isAuto, onRefine, onRetake, showRefineBtn }) {
   const isMobile = useIsMobile();
-  const risk = resolveRisk(result);
-  const prob = result?.pcos_probability ?? null;
+  const risk    = resolveRisk(result);
+  const prob    = result?.pcos_probability ?? null;
   const factors = result?.top_risk_factors ?? [];
-  const rec     = result?.recommendation ?? "";
-  const interp  = result?.interpretation ?? "";
+  const rec     = result?.recommendation   ?? "";
+  const interp  = result?.interpretation   ?? "";
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
@@ -190,7 +190,7 @@ function ResultPanel({ result, isAuto, onRefine, onRetake, showRefineBtn }) {
         </div>
       </div>
 
-      {/* Recommendation + Risk Factors — stacked on mobile, grid on desktop */}
+      {/* Recommendation + Risk Factors */}
       <div style={{
         display: "grid",
         gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr",
@@ -255,16 +255,14 @@ function ResultPanel({ result, isAuto, onRefine, onRetake, showRefineBtn }) {
 export default function PCOSPage() {
   const isMobile = useIsMobile();
   const navigate = useNavigate();
-  const currentUser = JSON.parse(localStorage.getItem("shecare_user") || "{}");
 
-  const [view,           setView]           = useState("loading");
-  const [autoResult,     setAutoResult]     = useState(null);
-  const [manualResult,   setManualResult]   = useState(null);
-  const [cycleData,      setCycleData]      = useState(null);
-  const [autoPayload,    setAutoPayload]    = useState(null);
-  const [symptoms,       setSymptoms]       = useState({ weight_gain: 0, hair_growth: 0, skin_darkening: 0, pimples: 0 });
-  const [error,          setError]          = useState("");
-  const [autoError,      setAutoError]      = useState("");
+  const [view,         setView]         = useState("loading");
+  const [autoResult,   setAutoResult]   = useState(null);
+  const [manualResult, setManualResult] = useState(null);
+  const [cycleData,    setCycleData]    = useState(null);
+  const [symptoms,     setSymptoms]     = useState({ weight_gain: 0, hair_growth: 0, skin_darkening: 0, pimples: 0 });
+  const [error,        setError]        = useState("");
+  const [autoError,    setAutoError]    = useState("");
 
   const shownResult = manualResult ?? autoResult;
   const isAutoShown = !manualResult && !!autoResult;
@@ -274,9 +272,10 @@ export default function PCOSPage() {
       try {
         const pred = await getPeriodPrediction();
         setCycleData(pred);
-        const payload = buildAutoPayload(pred, currentUser);
-        setAutoPayload(payload);
-        const res = await predictPCOS(payload);
+        if (!pred) {
+          setAutoError("Log your period to enable automatic PCOS assessment.");
+        }
+        const res = await predictPCOS();
         setAutoResult(res);
         setView("result");
       } catch (e) {
@@ -284,30 +283,13 @@ export default function PCOSPage() {
         setView("landing");
       }
     })();
-  }, [currentUser]);
-
-  function buildAutoPayload(pred, user) {
-    const bmi = parseFloat(user?.bmi ?? 22);
-    const age  = parseFloat(user?.age ?? 25);
-    return {
-      age, bmi,
-      cycle_length:      pred?.predictedCycleLength ?? 28,
-      cycle_regularity:  pred ? 1 : 0,
-      follicle_no_right: 5, follicle_no_left: 5,
-      amh: 3.0, fsh: 5.0, lh: 7.0,
-      fsh_lh_ratio: (5.0 / 7.0),
-      waist_hip_ratio: 0.8, endometrium_mm: 7,
-      avg_follicle_size_r: 12, avg_follicle_size_l: 12,
-      weight_gain: 0, hair_growth: 0, skin_darkening: 0, pimples: 0,
-    };
-  }
+  }, []);
 
   const submitRefinement = async () => {
     setView("submitting");
     setError("");
     try {
-      const payload = { ...(autoPayload ?? buildAutoPayload(cycleData, currentUser)), ...symptoms };
-      const res = await predictPCOS(payload);
+      const res = await predictPCOS();
       setManualResult(res);
       setView("result");
     } catch (e) {
@@ -401,7 +383,7 @@ export default function PCOSPage() {
             {isAutoShown && (
               <div style={{
                 background: "linear-gradient(135deg, #F5F3FF, #EFF6FF)",
-                border: `1.5px solid #C4B5FD`,
+                border: "1.5px solid #C4B5FD",
                 borderRadius: 16, padding: isMobile ? "12px 14px" : "14px 20px",
                 marginBottom: 20,
                 display: "flex", alignItems: "flex-start", gap: 12,

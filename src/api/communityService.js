@@ -93,3 +93,33 @@ export const getTrendingPosts = async (page = 0) => {
   const res = await API.get("/community/trending", { params: { page } });
   return res.data;
 };
+
+export const deletePost = async (postId) => {
+  const res = await API.delete(`/community/posts/${postId}`);
+  return res.data;
+};
+
+export const editPost = async (postId, postData, mediaFile = null) => {
+  const formData = new FormData();
+  formData.append("content", postData.content);
+  formData.append("anonymous", postData.anonymous);
+  formData.append("category", postData.category);
+
+  if (postData.hashtags && postData.hashtags.length > 0) {
+    postData.hashtags.forEach((tag) => formData.append("hashtags", tag));
+  }
+
+  if (mediaFile) {
+    formData.append("file", mediaFile);
+  }
+
+  const res = await API.put(`/community/posts/${postId}`, formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+  return res.data;
+};
+
+export const getBookmarkedPosts = async () => {
+  const res = await API.get("/community/bookmarks");
+  return res.data;
+};
