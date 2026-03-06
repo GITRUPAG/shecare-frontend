@@ -8,13 +8,17 @@ import API from "./api";
 export const createPost = async (postData, mediaFile = null) => {
   const formData = new FormData();
 
-  // JSON part — Blob forces Content-Type: application/json on this part
-  formData.append(
-    "data",
-    new Blob([JSON.stringify(postData)], { type: "application/json" })
-  );
+  // Match @RequestParam fields exactly
+  formData.append("content", postData.content);
+  formData.append("anonymous", postData.anonymous);
+  formData.append("category", postData.category);
 
-  // File part — optional; Spring ignores it when required = false
+  // hashtags as repeated params (Spring reads List<String> from repeated keys)
+  if (postData.hashtags && postData.hashtags.length > 0) {
+    postData.hashtags.forEach((tag) => formData.append("hashtags", tag));
+  }
+
+  // @RequestPart(value = "file", required = false)
   if (mediaFile) {
     formData.append("file", mediaFile);
   }
@@ -24,6 +28,7 @@ export const createPost = async (postData, mediaFile = null) => {
   });
   return res.data;
 };
+
 
 export const getFeed = async (category, hashtag, page = 0) => {
   const res = await API.get("/community/feed", {
