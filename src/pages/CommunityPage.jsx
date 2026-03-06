@@ -11,6 +11,9 @@ import {
   replyComment,
   getComments,
   reportPost,
+  deletePost,
+  editPost,
+  getBookmarkedPosts,
 } from "../api/communityService";
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
@@ -57,8 +60,9 @@ const MAX_FILE_MB    = 50;
 
 // ─── Feed Tabs ────────────────────────────────────────────────────────────────
 const FEED_TABS = [
-  { id: "community", label: "Community Feed", icon: "🌸" },
-  { id: "my-posts",  label: "My Posts",       icon: "📝" },
+  { id: "community",  label: "Community Feed", icon: "🌸" },
+  { id: "my-posts",   label: "My Posts",       icon: "📝" },
+  { id: "bookmarks",  label: "Bookmarks",      icon: "🔖" },
 ];
 
 // ─── Responsive hook ──────────────────────────────────────────────────────────
@@ -435,13 +439,103 @@ function MediaGrid({ mediaItems, onOpen }) {
   );
 }
 
+// ─── Edit Modal ───────────────────────────────────────────────────────────────
+function EditModal({ post, onClose, onSaved, username }) {
+  const isMobile = useIsMobile();
+  const body0  = post.body ?? (post.content ?? "").split("\n").slice(1).join("\n");
+  const title0 = post.title ?? (post.content ?? "").split("\n")[0] ?? "";
+  const cat0   = CATS.find(c => catToTag(c.id) === post.tag)?.id ?? "period";
+
+  const [form,        setForm]        = useState({ title: title0, body: body0, category: cat0, anonymous: post.anonymous ?? true });
+  const [mediaFile,   setMediaFile]   = useState(null);
+  const [mediaType,   setMediaType]   = useState(null);
+  const [mediaPreview,setMediaPreview]= useState(post.mediaUrls?.[0] ?? post.mediaUrl ?? null);
+  const [submitting,  setSubmitting]  = useState(false);
+  const [error,       setError]       = useState("");
+
+  const handleMediaSelect = (file, type) => {
+    if (!file) return;
+    if (file.size > MAX_FILE_MB * 1024 * 1024) { setError(`File too large. Max ${MAX_FILE_MB}MB.`); return; }
+    setMediaFile(file); setMediaType(type);
+    const reader = new FileReader();
+    reader.onload = e => setMediaPreview(e.target.result);
+    reader.readAsDataURL(file);
+  };
+
+  const removeMedia = () => { setMediaFile(null); setMediaType(null); setMediaPreview(null); };
+
+  const submit = async () => {
+    setError("");
+    if (!form.title.trim() || !form.body.trim()) { setError("Please fill in both title and story."); return; }
+    setSubmitting(true);
+    try {
+      const postData = { content: `${form.title.trim()}\n${form.body.trim()}`, category: form.category, anonymous: form.anonymous, hashtags: post.hashtags ?? [] };
+      const saved = await editPost(post.id, postData, mediaFile || null);
+      onSaved({ ...saved, title: form.title.trim(), body: form.body.trim(), tag: catToTag(saved.category), avatar: post.avatar ?? "🌸", liked: post.liked, saved: post.saved, reposted: post.reposted, mediaUrl: saved.mediaUrls?.[0] ?? mediaPreview ?? null, mediaType: saved.mediaType ?? mediaType ?? post.mediaType ?? null });
+    } catch (e) {
+      setError(e?.response?.data?.message || "Could not save changes.");
+    } finally { setSubmitting(false); }
+  };
+
+  return (
+    <div style={{ position: "fixed", inset: 0, background: "rgba(44,16,40,0.4)", backdropFilter: "blur(6px)", zIndex: 300, display: "flex", alignItems: isMobile ? "flex-end" : "center", justifyContent: "center", padding: isMobile ? 0 : 20 }}>
+      <div style={{ background: C.white, borderRadius: isMobile ? "24px 24px 0 0" : 28, padding: isMobile ? "28px 20px 36px" : "36px 40px", width: "100%", maxWidth: isMobile ? "100%" : 540, boxShadow: "0 24px 80px rgba(44,16,40,0.20)", maxHeight: isMobile ? "92vh" : "90vh", overflowY: "auto" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
+          <h2 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: isMobile ? 24 : 28, fontWeight: 700, color: C.textDark }}>Edit Post ✏️</h2>
+          <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: C.textSoft, fontSize: 22 }}>✕</button>
+        </div>
+
+        <Banner type="error" message={error} onClose={() => setError("")} />
+
+        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          <div>
+            <label style={{ display: "block", fontFamily: "'Nunito', sans-serif", fontSize: 13, fontWeight: 700, color: C.textMid, marginBottom: 6 }}>Category</label>
+            <select value={form.category} onChange={e => setForm(p => ({ ...p, category: e.target.value }))}
+              style={{ width: "100%", border: `2px solid ${C.border}`, borderRadius: 12, padding: "11px 14px", fontFamily: "'Nunito', sans-serif", fontSize: 14, outline: "none", background: C.sand, color: C.textDark }}>
+              {CATS.filter(c => c.id !== "all").map(c => <option key={c.id} value={c.id}>{c.icon} {c.label}</option>)}
+            </select>
+          </div>
+
+          <div>
+            <label style={{ display: "block", fontFamily: "'Nunito', sans-serif", fontSize: 13, fontWeight: 700, color: C.textMid, marginBottom: 6 }}>Title *</label>
+            <input value={form.title} onChange={e => setForm(p => ({ ...p, title: e.target.value }))}
+              style={{ width: "100%", border: `2px solid ${C.border}`, borderRadius: 12, padding: "11px 14px", fontFamily: "'Nunito', sans-serif", fontSize: 14, outline: "none", color: C.textDark, background: C.sand, boxSizing: "border-box" }}
+              onFocus={e => e.target.style.borderColor = C.primary}
+              onBlur={e  => e.target.style.borderColor = C.border} />
+          </div>
+
+          <div>
+            <label style={{ display: "block", fontFamily: "'Nunito', sans-serif", fontSize: 13, fontWeight: 700, color: C.textMid, marginBottom: 6 }}>Your Story *</label>
+            <textarea value={form.body} onChange={e => setForm(p => ({ ...p, body: e.target.value }))} rows={4}
+              style={{ width: "100%", border: `2px solid ${C.border}`, borderRadius: 12, padding: "11px 14px", fontFamily: "'Nunito', sans-serif", fontSize: 14, outline: "none", resize: "none", color: C.textDark, background: C.sand, boxSizing: "border-box" }}
+              onFocus={e => e.target.style.borderColor = C.primary}
+              onBlur={e  => e.target.style.borderColor = C.border} />
+          </div>
+
+          <MediaPicker mediaFile={mediaFile} mediaType={mediaType} mediaPreview={mediaPreview} onSelect={handleMediaSelect} onRemove={removeMedia} />
+          <AnonymousToggle anonymous={form.anonymous} onChange={val => setForm(p => ({ ...p, anonymous: val }))} username={username} />
+
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+            <button onClick={onClose} style={{ border: `2px solid ${C.border}`, borderRadius: 12, padding: "13px", background: C.white, fontFamily: "'Nunito', sans-serif", fontSize: 14, fontWeight: 700, color: C.textSoft, cursor: "pointer" }}>Cancel</button>
+            <button onClick={submit} disabled={submitting} style={{ background: submitting ? C.border : C.grad, color: C.white, border: "none", borderRadius: 12, padding: "13px", fontFamily: "'Nunito', sans-serif", fontSize: 14, fontWeight: 700, cursor: submitting ? "not-allowed" : "pointer", boxShadow: `0 4px 16px ${C.primaryGlow}`, transition: "all 0.2s" }}>
+              {submitting ? "Saving…" : "Save Changes →"}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Post Card ────────────────────────────────────────────────────────────────
-function PostCard({ post, onLikeToggle, onSaveToggle, onRepostToggle, onReportSuccess, currentUsername, isOwn }) {
+function PostCard({ post, onLikeToggle, onSaveToggle, onRepostToggle, onReportSuccess, onDeleted, onEdited, currentUsername, isOwn }) {
   const [expanded,     setExpanded]     = useState(false);
   const [showComments, setShowComments] = useState(false);
   const [liking,       setLiking]       = useState(false);
   const [saving,       setSaving]       = useState(false);
   const [reposting,    setReposting]    = useState(false);
+  const [deleting,     setDeleting]     = useState(false);
+  const [showEdit,     setShowEdit]     = useState(false);
   const [error,        setError]        = useState("");
   const [lightboxIdx,  setLightboxIdx]  = useState(null);
 
@@ -481,6 +575,13 @@ function PostCard({ post, onLikeToggle, onSaveToggle, onRepostToggle, onReportSu
     catch { setError("Could not submit report."); }
   };
 
+  const handleDelete = async () => {
+    if (!window.confirm("Are you sure you want to delete this post? This cannot be undone.")) return;
+    setDeleting(true);
+    try { await deletePost(post.id); onDeleted?.(post.id); }
+    catch (e) { setError(e?.response?.data?.message || "Could not delete post."); setDeleting(false); }
+  };
+
   const body = post.body ?? post.content ?? "";
   const displayTitle = post.title ?? body.split("\n")[0];
   const displayBody  = post.body  ?? (body.includes("\n") ? body.split("\n").slice(1).join("\n") : body);
@@ -491,6 +592,14 @@ function PostCard({ post, onLikeToggle, onSaveToggle, onRepostToggle, onReportSu
 
   return (
     <>
+      {showEdit && (
+        <EditModal
+          post={post}
+          onClose={() => setShowEdit(false)}
+          onSaved={updated => { setShowEdit(false); onEdited?.(updated); }}
+          username={currentUsername}
+        />
+      )}
       {lightboxIdx !== null && (
         <MediaLightbox items={mediaItems} startIndex={lightboxIdx} onClose={() => setLightboxIdx(null)} />
       )}
@@ -503,23 +612,24 @@ function PostCard({ post, onLikeToggle, onSaveToggle, onRepostToggle, onReportSu
         transition: "box-shadow 0.2s",
         position: "relative",
         width: "100%", minWidth: 0, boxSizing: "border-box", overflow: "hidden",
+        opacity: deleting ? 0.5 : 1,
       }}
         onMouseEnter={e => e.currentTarget.style.boxShadow = "0 8px 28px rgba(96,51,119,0.11)"}
         onMouseLeave={e => e.currentTarget.style.boxShadow = isOwn ? `0 2px 12px ${C.primaryGlow}, inset 0 0 0 1px ${C.primary}22` : "0 2px 12px rgba(96,51,119,0.06)"}
       >
+        {/* Own post badge + Edit/Delete actions */}
         {isOwn && (
-          <div style={{
-            position: "absolute", top: 14, right: 14,
-            background: C.grad, color: "white",
-            fontFamily: "'Nunito', sans-serif", fontSize: 10, fontWeight: 800,
-            borderRadius: 20, padding: "3px 10px", letterSpacing: "0.5px",
-            zIndex: 1,
-          }}>
-            ✏️ Your Post
+          <div style={{ position: "absolute", top: 14, right: 14, display: "flex", alignItems: "center", gap: 6, zIndex: 1 }}>
+            <button onClick={() => setShowEdit(true)} title="Edit post" style={{ background: "rgba(255,255,255,0.9)", border: `1px solid ${C.border}`, borderRadius: 8, padding: "4px 10px", fontFamily: "'Nunito', sans-serif", fontSize: 11, fontWeight: 700, color: C.textMid, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
+              ✏️ Edit
+            </button>
+            <button onClick={handleDelete} disabled={deleting} title="Delete post" style={{ background: "rgba(255,255,255,0.9)", border: "1px solid #FCA5A5", borderRadius: 8, padding: "4px 10px", fontFamily: "'Nunito', sans-serif", fontSize: 11, fontWeight: 700, color: "#DC2626", cursor: deleting ? "not-allowed" : "pointer", display: "flex", alignItems: "center", gap: 4 }}>
+              🗑️ {deleting ? "…" : "Delete"}
+            </button>
           </div>
         )}
 
-        <div style={{ padding: "18px 16px" }}>
+        <div style={{ padding: "18px 16px", paddingTop: isOwn ? 50 : 18 }}>
           {error && <Banner type="error" message={error} onClose={() => setError("")} />}
 
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
@@ -533,6 +643,7 @@ function PostCard({ post, onLikeToggle, onSaveToggle, onRepostToggle, onReportSu
                 </p>
                 <p style={{ fontFamily: "'Nunito', sans-serif", fontSize: 11, color: C.textSoft }}>
                   {post.createdAt ? new Date(post.createdAt).toLocaleString([], { dateStyle: "medium", timeStyle: "short" }) : post.time}
+                  {post.editedAt && <span style={{ marginLeft: 6, color: C.textSoft, fontStyle: "italic" }}>(edited)</span>}
                 </p>
               </div>
             </div>
@@ -703,24 +814,30 @@ function ComposeModal({ onClose, onPosted, username }) {
   );
 }
 
-// ─── My Posts Empty State ─────────────────────────────────────────────────────
+// ─── Empty states ─────────────────────────────────────────────────────────────
 function MyPostsEmpty({ onCompose }) {
   return (
     <div style={{ background: C.white, borderRadius: 22, padding: "40px 20px", textAlign: "center", border: `1.5px dashed ${C.border}`, width: "100%", boxSizing: "border-box" }}>
       <span style={{ fontSize: 52, display: "block", marginBottom: 16 }}>✏️</span>
-      <p style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 24, fontWeight: 700, color: C.textDark, marginBottom: 8 }}>
-        You haven't posted yet
-      </p>
+      <p style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 24, fontWeight: 700, color: C.textDark, marginBottom: 8 }}>You haven't posted yet</p>
       <p style={{ fontFamily: "'Nunito', sans-serif", fontSize: 14, color: C.textSoft, marginBottom: 24, maxWidth: 320, margin: "0 auto 24px" }}>
         Share your first story with the community — your voice matters here 🌸
       </p>
-      <button onClick={onCompose} style={{
-        background: C.grad, color: C.white, border: "none", borderRadius: 14,
-        padding: "13px 28px", fontFamily: "'Nunito', sans-serif", fontSize: 14, fontWeight: 700,
-        cursor: "pointer", boxShadow: `0 4px 16px ${C.primaryGlow}`,
-      }}>
+      <button onClick={onCompose} style={{ background: C.grad, color: C.white, border: "none", borderRadius: 14, padding: "13px 28px", fontFamily: "'Nunito', sans-serif", fontSize: 14, fontWeight: 700, cursor: "pointer", boxShadow: `0 4px 16px ${C.primaryGlow}` }}>
         ✏️ Share Your Story
       </button>
+    </div>
+  );
+}
+
+function BookmarksEmpty() {
+  return (
+    <div style={{ background: C.white, borderRadius: 22, padding: "40px 20px", textAlign: "center", border: `1.5px dashed ${C.border}`, width: "100%", boxSizing: "border-box" }}>
+      <span style={{ fontSize: 52, display: "block", marginBottom: 16 }}>🔖</span>
+      <p style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 24, fontWeight: 700, color: C.textDark, marginBottom: 8 }}>No bookmarks yet</p>
+      <p style={{ fontFamily: "'Nunito', sans-serif", fontSize: 14, color: C.textSoft, maxWidth: 320, margin: "0 auto" }}>
+        Save posts you want to revisit — tap 📌 on any post to bookmark it.
+      </p>
     </div>
   );
 }
@@ -766,6 +883,11 @@ export default function CommunityPage() {
   const [myError,   setMyError]   = useState("");
   const [myLoaded,  setMyLoaded]  = useState(false);
 
+  const [bookmarks,    setBookmarks]    = useState([]);
+  const [bmLoading,    setBmLoading]    = useState(false);
+  const [bmError,      setBmError]      = useState("");
+  const [bmLoaded,     setBmLoaded]     = useState(false);
+
   const [compose, setCompose] = useState(false);
   const [toast,   setToast]   = useState("");
 
@@ -802,18 +924,54 @@ export default function CommunityPage() {
     finally { setMyLoading(false); }
   }, []);
 
+  const loadBookmarks = useCallback(async () => {
+    setBmLoading(true); setBmError("");
+    try {
+      const data = await getBookmarkedPosts();
+      setBookmarks(data.map(p => ({
+        ...p, tag: catToTag(p.category), avatar: "🌸",
+        liked: false, saved: true, reposted: false,
+        mediaUrl: p.mediaUrls?.[0] ?? null, mediaType: p.mediaType ?? null,
+      })));
+      setBmLoaded(true);
+    } catch { setBmError("Could not load bookmarks."); }
+    finally { setBmLoading(false); }
+  }, []);
+
   useEffect(() => {
-    if (feedTab === "my-posts" && !myLoaded) loadMyPosts();
-  }, [feedTab, myLoaded, loadMyPosts]);
+    if (feedTab === "my-posts"  && !myLoaded) loadMyPosts();
+    if (feedTab === "bookmarks" && !bmLoaded) loadBookmarks();
+  }, [feedTab, myLoaded, bmLoaded, loadMyPosts, loadBookmarks]);
 
   const toggleInList = (setter, postId, field, countField) =>
     setter(prev => prev.map(p => p.id === postId
       ? { ...p, [field]: !p[field], [countField]: (p[countField] ?? 0) + (p[field] ? -1 : 1) }
       : p));
 
-  const handleLikeToggle   = postId => { toggleInList(setPosts, postId, "liked", "likeCount");     toggleInList(setMyPosts, postId, "liked", "likeCount"); };
-  const handleSaveToggle   = postId => { setPosts(prev => prev.map(p => p.id === postId ? { ...p, saved: !p.saved } : p)); setMyPosts(prev => prev.map(p => p.id === postId ? { ...p, saved: !p.saved } : p)); };
-  const handleRepostToggle = postId => { toggleInList(setPosts, postId, "reposted", "repostCount"); toggleInList(setMyPosts, postId, "reposted", "repostCount"); };
+  const handleLikeToggle   = postId => { toggleInList(setPosts, postId, "liked", "likeCount"); toggleInList(setMyPosts, postId, "liked", "likeCount"); toggleInList(setBookmarks, postId, "liked", "likeCount"); };
+  const handleSaveToggle   = postId => {
+    setPosts(prev => prev.map(p => p.id === postId ? { ...p, saved: !p.saved } : p));
+    setMyPosts(prev => prev.map(p => p.id === postId ? { ...p, saved: !p.saved } : p));
+    // Remove from bookmarks list when unsaved
+    setBookmarks(prev => prev.filter(p => p.id !== postId));
+    setBmLoaded(false); // refresh next time bookmarks tab is opened
+  };
+  const handleRepostToggle = postId => { toggleInList(setPosts, postId, "reposted", "repostCount"); toggleInList(setMyPosts, postId, "reposted", "repostCount"); toggleInList(setBookmarks, postId, "reposted", "repostCount"); };
+
+  const handleDeleted = (postId) => {
+    setPosts(prev => prev.filter(p => p.id !== postId));
+    setMyPosts(prev => prev.filter(p => p.id !== postId));
+    setBookmarks(prev => prev.filter(p => p.id !== postId));
+    showToast("Post deleted. 🗑️");
+  };
+
+  const handleEdited = (updated) => {
+    const applyEdit = prev => prev.map(p => p.id === updated.id ? updated : p);
+    setPosts(applyEdit);
+    setMyPosts(applyEdit);
+    setBookmarks(applyEdit);
+    showToast("Post updated! ✏️");
+  };
 
   const handlePosted = (newPost) => {
     setPosts(prev => [newPost, ...prev]);
@@ -871,11 +1029,11 @@ export default function CommunityPage() {
           {FEED_TABS.map(tab => (
             <button key={tab.id} onClick={() => setFeedTab(tab.id)} style={{
               display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
-              padding: isMobile ? "8px 14px" : "9px 20px", borderRadius: 12, border: "none",
+              padding: isMobile ? "8px 10px" : "9px 20px", borderRadius: 12, border: "none",
               flex: isMobile ? 1 : "none",
               background: feedTab === tab.id ? C.grad : "transparent",
               color: feedTab === tab.id ? C.white : C.textSoft,
-              fontFamily: "'Nunito', sans-serif", fontSize: isMobile ? 12 : 13, fontWeight: 700,
+              fontFamily: "'Nunito', sans-serif", fontSize: isMobile ? 11 : 13, fontWeight: 700,
               cursor: "pointer", transition: "all 0.2s",
               boxShadow: feedTab === tab.id ? `0 2px 10px ${C.primaryGlow}` : "none",
             }}>
@@ -883,6 +1041,11 @@ export default function CommunityPage() {
               {tab.id === "my-posts" && myLoaded && myPosts.length > 0 && (
                 <span style={{ background: feedTab === "my-posts" ? "rgba(255,255,255,0.3)" : C.primary, color: "white", borderRadius: 20, padding: "1px 7px", fontSize: 10, fontWeight: 800, marginLeft: 2 }}>
                   {myPosts.length}
+                </span>
+              )}
+              {tab.id === "bookmarks" && bmLoaded && bookmarks.length > 0 && (
+                <span style={{ background: feedTab === "bookmarks" ? "rgba(255,255,255,0.3)" : C.primary, color: "white", borderRadius: 20, padding: "1px 7px", fontSize: 10, fontWeight: 800, marginLeft: 2 }}>
+                  {bookmarks.length}
                 </span>
               )}
             </button>
@@ -949,20 +1112,25 @@ export default function CommunityPage() {
               feedTab={feedTab} visible={visible} loading={loading} hasMore={hasMore}
               page={page} setPage={setPage} loadFeed={loadFeed} cat={cat}
               feedError={feedError} myPosts={myPosts} myLoading={myLoading} myError={myError}
-              setMyError={setMyError} handleLikeToggle={handleLikeToggle}
-              handleSaveToggle={handleSaveToggle} handleRepostToggle={handleRepostToggle}
-              showToast={showToast} username={username} setCompose={setCompose}
+              setMyError={setMyError} bookmarks={bookmarks} bmLoading={bmLoading}
+              bmError={bmError} setBmError={setBmError}
+              handleLikeToggle={handleLikeToggle} handleSaveToggle={handleSaveToggle}
+              handleRepostToggle={handleRepostToggle} handleDeleted={handleDeleted}
+              handleEdited={handleEdited} showToast={showToast} username={username}
+              setCompose={setCompose}
             />
           </div>
         ) : (
-          /* ── Mobile: full width feed ── */
           <FeedContent
             feedTab={feedTab} visible={visible} loading={loading} hasMore={hasMore}
             page={page} setPage={setPage} loadFeed={loadFeed} cat={cat}
             feedError={feedError} myPosts={myPosts} myLoading={myLoading} myError={myError}
-            setMyError={setMyError} handleLikeToggle={handleLikeToggle}
-            handleSaveToggle={handleSaveToggle} handleRepostToggle={handleRepostToggle}
-            showToast={showToast} username={username} setCompose={setCompose}
+            setMyError={setMyError} bookmarks={bookmarks} bmLoading={bmLoading}
+            bmError={bmError} setBmError={setBmError}
+            handleLikeToggle={handleLikeToggle} handleSaveToggle={handleSaveToggle}
+            handleRepostToggle={handleRepostToggle} handleDeleted={handleDeleted}
+            handleEdited={handleEdited} showToast={showToast} username={username}
+            setCompose={setCompose}
           />
         )}
       </div>
@@ -970,10 +1138,18 @@ export default function CommunityPage() {
   );
 }
 
-// ─── Extracted feed content (shared between mobile/desktop) ──────────────────
-function FeedContent({ feedTab, visible, loading, hasMore, page, setPage, loadFeed, cat, feedError, myPosts, myLoading, myError, setMyError, handleLikeToggle, handleSaveToggle, handleRepostToggle, showToast, username, setCompose }) {
+// ─── Feed Content ─────────────────────────────────────────────────────────────
+function FeedContent({
+  feedTab, visible, loading, hasMore, page, setPage, loadFeed, cat,
+  feedError, myPosts, myLoading, myError, setMyError,
+  bookmarks, bmLoading, bmError, setBmError,
+  handleLikeToggle, handleSaveToggle, handleRepostToggle,
+  handleDeleted, handleEdited, showToast, username, setCompose,
+}) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16, width: "100%", minWidth: 0 }}>
+
+      {/* ── Community Feed ── */}
       {feedTab === "community" && (
         <>
           <p style={{ fontFamily: "'Nunito', sans-serif", fontSize: 13, color: C.textSoft }}>
@@ -997,6 +1173,7 @@ function FeedContent({ feedTab, visible, loading, hasMore, page, setPage, loadFe
                 <PostCard key={post.id} post={post}
                   onLikeToggle={handleLikeToggle} onSaveToggle={handleSaveToggle}
                   onRepostToggle={handleRepostToggle} onReportSuccess={msg => showToast(msg)}
+                  onDeleted={handleDeleted} onEdited={handleEdited}
                   currentUsername={username} />
               ))}
               {hasMore && (
@@ -1010,6 +1187,7 @@ function FeedContent({ feedTab, visible, loading, hasMore, page, setPage, loadFe
         </>
       )}
 
+      {/* ── My Posts ── */}
       {feedTab === "my-posts" && (
         <>
           {myError && <Banner type="error" message={myError} onClose={() => setMyError("")} />}
@@ -1029,7 +1207,36 @@ function FeedContent({ feedTab, visible, loading, hasMore, page, setPage, loadFe
                 <PostCard key={post.id} post={post}
                   onLikeToggle={handleLikeToggle} onSaveToggle={handleSaveToggle}
                   onRepostToggle={handleRepostToggle} onReportSuccess={msg => showToast(msg)}
+                  onDeleted={handleDeleted} onEdited={handleEdited}
                   currentUsername={username} isOwn={true} />
+              ))}
+            </>
+          )}
+        </>
+      )}
+
+      {/* ── Bookmarks ── */}
+      {feedTab === "bookmarks" && (
+        <>
+          {bmError && <Banner type="error" message={bmError} onClose={() => setBmError("")} />}
+          {bmLoading ? (
+            <div style={{ background: C.white, borderRadius: 22, padding: "60px 40px", textAlign: "center", border: `1px solid ${C.border}` }}>
+              <span style={{ fontSize: 40, display: "block", marginBottom: 12 }}>🔖</span>
+              <p style={{ fontFamily: "'Nunito', sans-serif", fontSize: 14, color: C.textSoft }}>Loading bookmarks…</p>
+            </div>
+          ) : bookmarks.length === 0 ? (
+            <BookmarksEmpty />
+          ) : (
+            <>
+              <p style={{ fontFamily: "'Nunito', sans-serif", fontSize: 13, color: C.textSoft }}>
+                <strong style={{ color: C.textDark }}>{bookmarks.length}</strong> saved post{bookmarks.length !== 1 ? "s" : ""}
+              </p>
+              {bookmarks.map(post => (
+                <PostCard key={post.id} post={post}
+                  onLikeToggle={handleLikeToggle} onSaveToggle={handleSaveToggle}
+                  onRepostToggle={handleRepostToggle} onReportSuccess={msg => showToast(msg)}
+                  onDeleted={handleDeleted} onEdited={handleEdited}
+                  currentUsername={username} />
               ))}
             </>
           )}
