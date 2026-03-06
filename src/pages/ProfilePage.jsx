@@ -21,6 +21,17 @@ const C = {
 
 const TABS = ["Profile", "Health Info", "Notifications", "Privacy", "Account"];
 
+// ─── Responsive hook ──────────────────────────────────────────────────────────
+function useIsMobile() {
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  useEffect(() => {
+    const handler = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener("resize", handler);
+    return () => window.removeEventListener("resize", handler);
+  }, []);
+  return isMobile;
+}
+
 // ─── Reusable components ──────────────────────────────────────────────────────
 
 function Field({ label, type = "text", value, onChange, placeholder, readOnly }) {
@@ -82,6 +93,7 @@ function Banner({ type, message }) {
 export default function ProfilePage() {
   const navigate  = useNavigate();
   const fileRef   = useRef();
+  const isMobile  = useIsMobile();
 
   const [tab,      setTab]      = useState("Profile");
   const [profile,  setProfile]  = useState(null);
@@ -137,12 +149,18 @@ export default function ProfilePage() {
 
   // ── Sign out ─────────────────────────────────────────────────────────────
   const handleSignOut = () => {
-  removeToken();                           // removes "shecare_token"
-  localStorage.removeItem("shecare_user");
-  navigate("/login");
-};
+    removeToken();
+    localStorage.removeItem("shecare_user");
+    navigate("/login");
+  };
 
-  const card = { background: C.white, borderRadius: 24, padding: "28px 32px", border: `1px solid ${C.border}`, boxShadow: "0 2px 16px rgba(96,51,119,0.07)" };
+  const card = {
+    background: C.white, borderRadius: 20,
+    padding: isMobile ? "18px 16px" : "28px 32px",
+    border: `1px solid ${C.border}`,
+    boxShadow: "0 2px 16px rgba(96,51,119,0.07)",
+    boxSizing: "border-box",
+  };
 
   // ── Loading skeleton ─────────────────────────────────────────────────────
   if (loading) {
@@ -160,51 +178,83 @@ export default function ProfilePage() {
 
   return (
     <AppShell current="profile">
-      <div style={{ padding: "32px 36px", maxWidth: 1000 }}>
+      <div style={{
+        padding: isMobile ? "14px 12px" : "32px 36px",
+        maxWidth: 1000,
+        width: "100%",
+        boxSizing: "border-box",
+        overflowX: "hidden",
+      }}>
 
         {/* Feedback banner */}
         <Banner type={feedback.type} message={feedback.msg} />
 
         {/* ── Hero ── */}
-        <div style={{ background: `linear-gradient(135deg, ${C.primary}, ${C.secondary})`, borderRadius: 28, padding: "32px 36px", marginBottom: 28, display: "flex", alignItems: "center", gap: 24, color: C.white, position: "relative", overflow: "hidden" }}>
+        <div style={{
+          background: `linear-gradient(135deg, ${C.primary}, ${C.secondary})`,
+          borderRadius: isMobile ? 20 : 28,
+          padding: isMobile ? "20px 18px" : "32px 36px",
+          marginBottom: isMobile ? 16 : 28,
+          display: "flex",
+          flexDirection: isMobile ? "column" : "row",
+          alignItems: isMobile ? "flex-start" : "center",
+          gap: isMobile ? 16 : 24,
+          color: C.white,
+          position: "relative",
+          overflow: "hidden",
+        }}>
           <div style={{ position: "absolute", top: -60, right: -60, width: 240, height: 240, background: "rgba(128,70,142,0.25)", filter: "blur(50px)", borderRadius: "50%" }} />
           <div style={{ position: "absolute", bottom: -40, left: 100, width: 160, height: 160, background: "rgba(216,94,130,0.2)", filter: "blur(40px)", borderRadius: "50%" }} />
 
-          {/* Avatar */}
-          <div style={{ position: "relative", flexShrink: 0 }}>
-            {profile?.profileImageUrl ? (
-              <img src={profile.profileImageUrl} alt="avatar" style={{ width: 80, height: 80, borderRadius: 20, objectFit: "cover", border: "3px solid rgba(255,255,255,0.4)" }} />
-            ) : (
-              <div style={{ width: 80, height: 80, borderRadius: 20, background: "rgba(255,255,255,0.2)", backdropFilter: "blur(8px)", border: "2px solid rgba(255,255,255,0.35)", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Cormorant Garamond', serif", fontSize: 36, fontWeight: 700, color: C.white }}>
-                {initial}
-              </div>
-            )}
-            <input ref={fileRef} type="file" accept="image/*" style={{ display: "none" }} onChange={handleImageUpload} />
-            <button onClick={() => fileRef.current?.click()} disabled={imgUp} style={{ position: "absolute", bottom: -4, right: -4, width: 24, height: 24, borderRadius: "50%", background: C.white, border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, color: C.primary, fontWeight: 700, boxShadow: "0 2px 8px rgba(0,0,0,0.15)" }}>
-              {imgUp ? "…" : "✏"}
-            </button>
-          </div>
+          {/* Top row on mobile: avatar + name side by side */}
+          <div style={{ display: "flex", alignItems: "center", gap: 16, position: "relative", zIndex: 2, width: isMobile ? "100%" : "auto" }}>
+            {/* Avatar */}
+            <div style={{ position: "relative", flexShrink: 0 }}>
+              {profile?.profileImageUrl ? (
+                <img src={profile.profileImageUrl} alt="avatar" style={{ width: isMobile ? 64 : 80, height: isMobile ? 64 : 80, borderRadius: 16, objectFit: "cover", border: "3px solid rgba(255,255,255,0.4)" }} />
+              ) : (
+                <div style={{ width: isMobile ? 64 : 80, height: isMobile ? 64 : 80, borderRadius: 16, background: "rgba(255,255,255,0.2)", backdropFilter: "blur(8px)", border: "2px solid rgba(255,255,255,0.35)", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Cormorant Garamond', serif", fontSize: isMobile ? 28 : 36, fontWeight: 700, color: C.white }}>
+                  {initial}
+                </div>
+              )}
+              <input ref={fileRef} type="file" accept="image/*" style={{ display: "none" }} onChange={handleImageUpload} />
+              <button onClick={() => fileRef.current?.click()} disabled={imgUp} style={{ position: "absolute", bottom: -4, right: -4, width: 24, height: 24, borderRadius: "50%", background: C.white, border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, color: C.primary, fontWeight: 700, boxShadow: "0 2px 8px rgba(0,0,0,0.15)" }}>
+                {imgUp ? "…" : "✏"}
+              </button>
+            </div>
 
-          {/* Info */}
-          <div style={{ flex: 1, position: "relative", zIndex: 2 }}>
-            <h2 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 28, fontWeight: 700, marginBottom: 4 }}>{displayName}</h2>
-            <p style={{ fontFamily: "'Nunito', sans-serif", fontSize: 14, opacity: 0.8, marginBottom: 10 }}>{profile?.email || "—"}</p>
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-              {profile?.city && <span style={{ fontFamily: "'Nunito', sans-serif", fontSize: 12, fontWeight: 700, background: "rgba(255,255,255,0.2)", padding: "4px 12px", borderRadius: 20 }}>📍 {profile.city}</span>}
-              {profile?.bloodGroup && <span style={{ fontFamily: "'Nunito', sans-serif", fontSize: 12, fontWeight: 700, background: "rgba(255,255,255,0.2)", padding: "4px 12px", borderRadius: 20 }}>🩸 {profile.bloodGroup}</span>}
-              {profile?.activityLevel && <span style={{ fontFamily: "'Nunito', sans-serif", fontSize: 12, fontWeight: 700, background: "rgba(255,255,255,0.2)", padding: "4px 12px", borderRadius: 20 }}>💪 {profile.activityLevel}</span>}
+            {/* Name + email */}
+            <div style={{ flex: 1, position: "relative", zIndex: 2, minWidth: 0 }}>
+              <h2 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: isMobile ? 22 : 28, fontWeight: 700, marginBottom: 2 }}>{displayName}</h2>
+              <p style={{ fontFamily: "'Nunito', sans-serif", fontSize: isMobile ? 12 : 14, opacity: 0.8, marginBottom: isMobile ? 6 : 10, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{profile?.email || "—"}</p>
+              <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                {profile?.city && <span style={{ fontFamily: "'Nunito', sans-serif", fontSize: 11, fontWeight: 700, background: "rgba(255,255,255,0.2)", padding: "3px 10px", borderRadius: 20 }}>📍 {profile.city}</span>}
+                {profile?.bloodGroup && <span style={{ fontFamily: "'Nunito', sans-serif", fontSize: 11, fontWeight: 700, background: "rgba(255,255,255,0.2)", padding: "3px 10px", borderRadius: 20 }}>🩸 {profile.bloodGroup}</span>}
+                {profile?.activityLevel && <span style={{ fontFamily: "'Nunito', sans-serif", fontSize: 11, fontWeight: 700, background: "rgba(255,255,255,0.2)", padding: "3px 10px", borderRadius: 20 }}>💪 {profile.activityLevel}</span>}
+              </div>
             </div>
           </div>
 
-          {/* Stats */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 24, textAlign: "center", position: "relative", zIndex: 2 }}>
+          {/* Stats row — always a row, but tighter on mobile */}
+          <div style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(3, 1fr)",
+            gap: isMobile ? 12 : 24,
+            textAlign: "center",
+            position: "relative",
+            zIndex: 2,
+            width: isMobile ? "100%" : "auto",
+            background: isMobile ? "rgba(255,255,255,0.1)" : "none",
+            borderRadius: isMobile ? 14 : 0,
+            padding: isMobile ? "12px 8px" : 0,
+          }}>
             {[
               [profile?.age ?? "—",    "Age"],
               [profile?.height ? `${profile.height}cm` : "—", "Height"],
               [profile?.weight ? `${profile.weight}kg` : "—", "Weight"],
             ].map(([v, l]) => (
               <div key={l}>
-                <p style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 26, fontWeight: 700 }}>{v}</p>
+                <p style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: isMobile ? 20 : 26, fontWeight: 700 }}>{v}</p>
                 <p style={{ fontFamily: "'Nunito', sans-serif", fontSize: 11, opacity: 0.75 }}>{l}</p>
               </div>
             ))}
@@ -212,24 +262,39 @@ export default function ProfilePage() {
         </div>
 
         {/* ── Tabs ── */}
-        <div style={{ display: "flex", gap: 4, background: C.bgLight, borderRadius: 16, padding: 4, marginBottom: 28, overflowX: "auto" }}>
+        <div style={{
+          display: "flex", gap: 4,
+          background: C.bgLight, borderRadius: 16, padding: 4,
+          marginBottom: isMobile ? 16 : 28,
+          overflowX: "auto",
+          WebkitOverflowScrolling: "touch",
+          scrollbarWidth: "none",
+        }}>
           {TABS.map(t => (
             <button key={t} onClick={() => setTab(t)} style={{
-              padding: "11px 20px", borderRadius: 12, border: "none", whiteSpace: "nowrap",
+              padding: isMobile ? "9px 12px" : "11px 20px",
+              borderRadius: 12, border: "none", whiteSpace: "nowrap",
               background: tab === t ? C.white : "transparent",
               color: tab === t ? C.textDark : C.textSoft,
-              fontFamily: "'Nunito', sans-serif", fontSize: 14, fontWeight: 700,
+              fontFamily: "'Nunito', sans-serif",
+              fontSize: isMobile ? 12 : 14,
+              fontWeight: 700,
               cursor: "pointer", transition: "all 0.2s",
               boxShadow: tab === t ? `0 2px 10px rgba(96,51,119,0.12)` : "none",
+              flexShrink: 0,
             }}>{t}</button>
           ))}
         </div>
 
         {/* ── PROFILE TAB ── */}
         {tab === "Profile" && (
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
-            <div style={{ ...card, display: "flex", flexDirection: "column", gap: 16 }}>
-              <h2 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 22, fontWeight: 700, color: C.textDark }}>Personal Information</h2>
+          <div style={{
+            display: "grid",
+            gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr",
+            gap: 16,
+          }}>
+            <div style={{ ...card, display: "flex", flexDirection: "column", gap: 14 }}>
+              <h2 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: isMobile ? 18 : 22, fontWeight: 700, color: C.textDark }}>Personal Information</h2>
               <Field label="Full Name"      value={profile?.fullName}   onChange={v => upd("fullName", v)}   placeholder="Your full name" />
               <Field label="Date of Birth"  type="date" value={profile?.dateOfBirth} onChange={v => upd("dateOfBirth", v)} />
               <SelectField label="Gender" value={profile?.gender} onChange={v => upd("gender", v)} options={["Female","Male","Non-binary","Prefer not to say"]} />
@@ -239,9 +304,9 @@ export default function ProfilePage() {
               <Field label="Country" value={profile?.country} onChange={v => upd("country", v)} placeholder="Country" />
             </div>
 
-            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
               <div style={card}>
-                <h3 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 20, fontWeight: 700, color: C.textDark, marginBottom: 14 }}>Body Metrics</h3>
+                <h3 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: isMobile ? 17 : 20, fontWeight: 700, color: C.textDark, marginBottom: 14 }}>Body Metrics</h3>
                 <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
                   <Field label="Height (cm)" type="number" value={profile?.height}  onChange={v => upd("height", +v)}  placeholder="e.g. 162" />
                   <Field label="Weight (kg)" type="number" value={profile?.weight}  onChange={v => upd("weight", +v)}  placeholder="e.g. 58" />
@@ -250,7 +315,7 @@ export default function ProfilePage() {
               </div>
 
               <div style={card}>
-                <h3 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 20, fontWeight: 700, color: C.textDark, marginBottom: 14 }}>Emergency Contact</h3>
+                <h3 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: isMobile ? 17 : 20, fontWeight: 700, color: C.textDark, marginBottom: 14 }}>Emergency Contact</h3>
                 <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
                   <Field label="Contact Name"   value={profile?.emergencyContactName}   onChange={v => upd("emergencyContactName", v)}   placeholder="Name" />
                   <Field label="Contact Number" value={profile?.emergencyContactNumber} onChange={v => upd("emergencyContactNumber", v)} placeholder="Phone number" />
@@ -262,9 +327,13 @@ export default function ProfilePage() {
 
         {/* ── HEALTH INFO TAB ── */}
         {tab === "Health Info" && (
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
+          <div style={{
+            display: "grid",
+            gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr",
+            gap: 16,
+          }}>
             <div style={{ ...card, display: "flex", flexDirection: "column", gap: 16 }}>
-              <h2 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 22, fontWeight: 700, color: C.textDark }}>Medical Conditions</h2>
+              <h2 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: isMobile ? 18 : 22, fontWeight: 700, color: C.textDark }}>Medical Conditions</h2>
               <p style={{ fontFamily: "'Nunito', sans-serif", fontSize: 13, color: C.textSoft, marginTop: -8 }}>Improves your AI health recommendations</p>
               {[
                 { key: "hasPCOS",         label: "PCOS",         desc: "Polycystic Ovary Syndrome" },
@@ -282,9 +351,9 @@ export default function ProfilePage() {
               ))}
             </div>
 
-            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
               <div style={card}>
-                <h3 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 20, fontWeight: 700, color: C.textDark, marginBottom: 16 }}>Lifestyle</h3>
+                <h3 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: isMobile ? 17 : 20, fontWeight: 700, color: C.textDark, marginBottom: 16 }}>Lifestyle</h3>
                 <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
                   <SelectField label="Activity Level" value={profile?.activityLevel} onChange={v => upd("activityLevel", v)}
                     options={["Sedentary","Lightly Active","Moderately Active","Very Active","Athlete"]} />
@@ -309,7 +378,7 @@ export default function ProfilePage() {
                 const pct = Math.min(100, Math.max(0, ((bmi - 10) / 30) * 100));
                 return (
                   <div style={{ ...card }}>
-                    <h3 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 20, fontWeight: 700, color: C.textDark, marginBottom: 14 }}>BMI Calculator</h3>
+                    <h3 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: isMobile ? 17 : 20, fontWeight: 700, color: C.textDark, marginBottom: 14 }}>BMI Calculator</h3>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
                       <p style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 40, fontWeight: 700, color: catColor, lineHeight: 1 }}>{bmi}</p>
                       <span style={{ fontFamily: "'Nunito', sans-serif", fontSize: 13, fontWeight: 800, padding: "5px 14px", borderRadius: 20, background: `${catColor}18`, color: catColor }}>{cat}</span>
@@ -330,9 +399,9 @@ export default function ProfilePage() {
 
         {/* ── NOTIFICATIONS TAB ── */}
         {tab === "Notifications" && (
-          <div style={{ maxWidth: 520 }}>
+          <div style={{ maxWidth: isMobile ? "100%" : 520 }}>
             <div style={card}>
-              <h2 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 22, fontWeight: 700, color: C.textDark, marginBottom: 8 }}>Notification Preferences</h2>
+              <h2 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: isMobile ? 18 : 22, fontWeight: 700, color: C.textDark, marginBottom: 8 }}>Notification Preferences</h2>
               <p style={{ fontFamily: "'Nunito', sans-serif", fontSize: 13, color: C.textSoft, marginBottom: 24 }}>Synced with your profile settings</p>
               <div style={{ display: "flex", flexDirection: "column" }}>
                 {[
@@ -358,9 +427,9 @@ export default function ProfilePage() {
 
         {/* ── PRIVACY TAB ── */}
         {tab === "Privacy" && (
-          <div style={{ maxWidth: 520, display: "flex", flexDirection: "column", gap: 16 }}>
+          <div style={{ maxWidth: isMobile ? "100%" : 520, display: "flex", flexDirection: "column", gap: 16 }}>
             <div style={card}>
-              <h2 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 22, fontWeight: 700, color: C.textDark, marginBottom: 22 }}>Privacy Controls</h2>
+              <h2 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: isMobile ? 18 : 22, fontWeight: 700, color: C.textDark, marginBottom: 22 }}>Privacy Controls</h2>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 0" }}>
                 <div>
                   <p style={{ fontFamily: "'Nunito', sans-serif", fontSize: 14, fontWeight: 700, color: C.textDark }}>Dark Mode</p>
@@ -369,8 +438,8 @@ export default function ProfilePage() {
                 <Toggle on={!!profile?.darkModeEnabled} onToggle={() => upd("darkModeEnabled", !profile?.darkModeEnabled)} />
               </div>
             </div>
-            <div style={{ background: C.bgLight, borderRadius: 22, padding: "24px 28px", border: `1px solid ${C.border}` }}>
-              <h3 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 20, fontWeight: 700, color: C.secondary, marginBottom: 12 }}>🔐 SheCare Privacy Promise</h3>
+            <div style={{ background: C.bgLight, borderRadius: 20, padding: isMobile ? "18px 16px" : "24px 28px", border: `1px solid ${C.border}` }}>
+              <h3 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: isMobile ? 17 : 20, fontWeight: 700, color: C.secondary, marginBottom: 12 }}>🔐 SheCare Privacy Promise</h3>
               {["Your health data is end-to-end encrypted","We never sell your data to third parties","Community posts are always anonymous","Delete your account & all data at any time","GDPR compliant data protection"].map(p => (
                 <div key={p} style={{ display: "flex", alignItems: "flex-start", gap: 8, marginBottom: 8 }}>
                   <span style={{ color: C.primary, flexShrink: 0 }}>✓</span>
@@ -383,9 +452,9 @@ export default function ProfilePage() {
 
         {/* ── ACCOUNT TAB ── */}
         {tab === "Account" && (
-          <div style={{ maxWidth: 500 }}>
+          <div style={{ maxWidth: isMobile ? "100%" : 500 }}>
             <div style={card}>
-              <h2 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 22, fontWeight: 700, color: C.textDark, marginBottom: 18 }}>Account Actions</h2>
+              <h2 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: isMobile ? 18 : 22, fontWeight: 700, color: C.textDark, marginBottom: 18 }}>Account Actions</h2>
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                 {[
                   { icon: "📥", label: "Export My Data",   desc: "Download all your health data as CSV",  c: C.textDark,    hover: C.bgLight,   action: null },
@@ -394,16 +463,16 @@ export default function ProfilePage() {
                   { icon: "🗑",  label: "Delete Account",  desc: "Permanently delete account & data",     c: C.primaryDark, hover: "#FFF0F4",   action: null },
                 ].map(a => (
                   <button key={a.label} onClick={a.action}
-                    style={{ display: "flex", alignItems: "center", gap: 14, padding: "16px 18px", borderRadius: 14, border: `1px solid ${C.border}`, background: C.white, cursor: a.action ? "pointer" : "not-allowed", opacity: a.action ? 1 : 0.55, transition: "background 0.2s", width: "100%", textAlign: "left" }}
+                    style={{ display: "flex", alignItems: "center", gap: 14, padding: "16px 18px", borderRadius: 14, border: `1px solid ${C.border}`, background: C.white, cursor: a.action ? "pointer" : "not-allowed", opacity: a.action ? 1 : 0.55, transition: "background 0.2s", width: "100%", textAlign: "left", boxSizing: "border-box" }}
                     onMouseEnter={e => { if (a.action) e.currentTarget.style.background = a.hover; }}
                     onMouseLeave={e => { e.currentTarget.style.background = C.white; }}
                   >
                     <span style={{ fontSize: 20 }}>{a.icon}</span>
-                    <div style={{ flex: 1 }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
                       <p style={{ fontFamily: "'Nunito', sans-serif", fontSize: 14, fontWeight: 700, color: a.c }}>{a.label}</p>
                       <p style={{ fontFamily: "'Nunito', sans-serif", fontSize: 12, color: C.textSoft, marginTop: 2 }}>{a.desc}</p>
                     </div>
-                    <span style={{ color: C.textSoft }}>→</span>
+                    <span style={{ color: C.textSoft, flexShrink: 0 }}>→</span>
                   </button>
                 ))}
               </div>
@@ -411,16 +480,19 @@ export default function ProfilePage() {
           </div>
         )}
 
-        {/* ── Save button (Profile + Health Info tabs) ── */}
+        {/* ── Save button (Profile + Health Info + Notifications + Privacy tabs) ── */}
         {["Profile", "Health Info", "Notifications", "Privacy"].includes(tab) && (
-          <div style={{ marginTop: 24 }}>
+          <div style={{ marginTop: 20 }}>
             <button onClick={saveChanges} disabled={saving} style={{
               background: saving ? C.border : `linear-gradient(135deg, ${C.primary}, ${C.secondary})`,
-              color: C.white, border: "none", borderRadius: 14, padding: "14px 32px",
+              color: C.white, border: "none", borderRadius: 14,
+              padding: "14px 32px",
+              width: isMobile ? "100%" : "auto",
               fontFamily: "'Nunito', sans-serif", fontSize: 14, fontWeight: 700,
               cursor: saving ? "not-allowed" : "pointer",
               boxShadow: saving ? "none" : "0 4px 16px rgba(96,51,119,0.30)",
               transition: "all 0.3s",
+              boxSizing: "border-box",
             }}>
               {saving ? "Saving…" : "Save Changes →"}
             </button>
