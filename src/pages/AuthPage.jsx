@@ -20,7 +20,7 @@ const C = {
 const API_BASE = "https://shecare-backend-1061624847334.asia-south1.run.app";
 
 async function apiRegister(payload) {
-  const res = await fetch(`${API_BASE}/auth/register`, {
+  const res = await fetch(`${API_BASE}/api/auth/register`, {
     method: "POST", headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
   });
