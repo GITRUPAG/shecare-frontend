@@ -12,15 +12,6 @@ const C = {
 
 const DAYS   = ["M","T","W","T","F","S","S"];
 const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
-const displayName = user?.name || user?.username || "there";
-
-const getGreeting = () => {
-  const hour = new Date().getHours();
-  if (hour < 12) return "Good morning ☀️";
-  if (hour < 17) return "Good afternoon 🌤️";
-  if (hour < 21) return "Good evening 🌙";
-  return "Good night 🌟";
-};
 
 function getOffset(y, m) { const d = new Date(y, m, 1).getDay(); return d === 0 ? 6 : d - 1; }
 function fmt(dateStr) { if (!dateStr) return "—"; return new Date(dateStr).toLocaleDateString("en-IN", { day:"numeric", month:"short" }); }
@@ -55,6 +46,15 @@ export default function DashboardPage() {
   const user = raw ? JSON.parse(raw) : {};
   const displayName = user?.name || user?.username || "there";
 
+  // ✅ Time-based greeting
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return "Good morning ☀️";
+    if (hour < 17) return "Good afternoon 🌤️";
+    if (hour < 21) return "Good evening 🌙";
+    return "Good night 🌟";
+  };
+
   useEffect(() => {
     const fetchAll = async () => {
       setLoading(true);
@@ -62,7 +62,6 @@ export default function DashboardPage() {
         getCalendar(), getPrediction(), getPhaseInsights(), getAlerts(), getHealthRisk(),
       ]);
 
-      // NOTE: service functions already return res.data, so .value IS the data directly
       if (calR.status    === "fulfilled") setCalendar(calR.value       ?? null);
       if (predR.status   === "fulfilled") setPrediction(predR.value    ?? null);
       if (insR.status    === "fulfilled") setPhaseInsights(insR.value  ?? null);
@@ -164,22 +163,15 @@ export default function DashboardPage() {
 
         .db-root { padding: 24px 20px; max-width: 1100px; }
 
-        /* Header */
         .db-header { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:24px; gap:12px; }
         .db-header h1 { font-family:'Cormorant Garamond',serif; font-size:28px; font-weight:700; color:${C.textDark}; letter-spacing:-0.5px; margin:0; }
         .db-header p  { font-family:'Nunito',sans-serif; font-size:13px; color:${C.textSoft}; margin:0 0 4px; }
         .db-log-btn   { background:linear-gradient(135deg,${C.coral},${C.coralDark}); color:white; border:none; border-radius:12px; padding:11px 18px; font-family:'Nunito',sans-serif; font-size:14px; font-weight:700; cursor:pointer; box-shadow:0 4px 16px rgba(255,107,71,0.30); white-space:nowrap; flex-shrink:0; }
 
-        /* Stat cards grid */
         .db-stats { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:24px; }
-
-        /* Main grid */
         .db-main  { display:grid; grid-template-columns:1.5fr 1fr; gap:20px; }
-
-        /* Right column stack */
         .db-right { display:flex; flex-direction:column; gap:16px; }
 
-        /* ─── Mobile ─── */
         @media (max-width: 767px) {
           .db-root  { padding: 16px 16px 80px; }
           .db-header h1 { font-size:22px; }
@@ -189,14 +181,12 @@ export default function DashboardPage() {
           .db-right { gap:12px; }
         }
 
-        /* ─── Tablet ─── */
         @media (min-width:768px) and (max-width:1023px) {
           .db-root  { padding: 20px 24px; }
           .db-stats { grid-template-columns: repeat(2, 1fr); gap:12px; }
           .db-main  { grid-template-columns: 1fr; }
         }
 
-        /* ─── Desktop ─── */
         @media (min-width:1024px) {
           .db-root  { padding:32px 36px; }
           .db-stats { grid-template-columns: repeat(4,1fr); }
@@ -209,6 +199,7 @@ export default function DashboardPage() {
         {/* Header */}
         <div className="db-header">
           <div>
+            {/* ✅ Dynamic time-based greeting */}
             <p>{getGreeting()}</p>
             <h1>Welcome back, {displayName}</h1>
           </div>
