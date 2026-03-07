@@ -68,13 +68,158 @@ function useMediaQuery(query) {
   return matches;
 }
 
+/* ─── PRIVACY POLICY PAGE ─── */
+function PrivacyPage({ onBack }) {
+  const isMobile = useMediaQuery("(max-width: 768px)");
+  return (
+    <div style={{ background: "#FFFFFF", minHeight: "100vh" }}>
+      <div style={{ background: "linear-gradient(135deg, #D85E82, #603377)", padding: "60px 5% 40px" }}>
+        <div style={{ maxWidth: 800, margin: "0 auto" }}>
+          <button onClick={onBack} style={{ background: "rgba(255,255,255,0.2)", border: "none", borderRadius: 50, padding: "8px 18px", color: "white", fontFamily: "Nunito, sans-serif", fontSize: 13, fontWeight: 700, cursor: "pointer", marginBottom: 24 }}>← Back</button>
+          <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 8 }}>
+            <span style={{ fontSize: 36 }}>🔐</span>
+            <h1 style={{ fontFamily: "Cormorant Garamond, serif", fontSize: "clamp(32px, 6vw, 56px)", fontWeight: 700, color: "white", lineHeight: 1 }}>Privacy Policy</h1>
+          </div>
+          <p style={{ fontFamily: "Nunito, sans-serif", color: "rgba(255,255,255,0.8)", fontSize: 14, marginTop: 8 }}>Last updated: March 8, 2025 · Effective immediately</p>
+        </div>
+      </div>
+      <div style={{ maxWidth: 800, margin: "0 auto", padding: isMobile ? "40px 5%" : "60px 5%" }}>
+        {[
+          {
+            icon: "🌸", title: "Our Commitment to You",
+            content: "At SheCare, your privacy is not a feature — it is our foundation. We are deeply committed to protecting the sensitive health information you share with us. This policy explains clearly what data we collect, how we use it, and the rights you hold over your information."
+          },
+          {
+            icon: "📋", title: "Information We Collect",
+            content: "We collect only what is necessary to provide you with a personalized, accurate health experience:\n\n• **Account Information**: Name, email address, and password (stored as a cryptographic hash — never plain text).\n• **Health Data**: Cycle dates, symptom logs, mood entries, flow intensity, sleep patterns, and PCOS screening responses.\n• **Usage Data**: App interactions and feature usage to improve your experience.\n• **Device Info**: Browser type and operating system for compatibility purposes only.\n\nWe do NOT collect location data, financial information, or any data unrelated to your health and account."
+          },
+          {
+            icon: "🔒", title: "How Your Data Is Protected",
+            content: "Your data is safe and encrypted at every step:\n\n• **End-to-end encryption** for all health data transmitted between your device and our servers.\n• **AES-256 encryption** for all data stored in our databases.\n• **Zero-knowledge architecture** — our team cannot read your personal health entries.\n• **Regular third-party security audits** to identify and resolve vulnerabilities.\n• **Secure HTTPS connections** on all endpoints, always."
+          },
+          {
+            icon: "🚫", title: "What We Will Never Do",
+            content: "We make these commitments unconditionally:\n\n• We will NEVER sell your data to any third party — advertisers, data brokers, or otherwise.\n• We will NEVER share your health information with insurance companies or employers.\n• We will NEVER use your data to serve targeted advertisements.\n• We will NEVER transfer your data without your explicit, informed consent."
+          },
+          {
+            icon: "⚙️", title: "How We Use Your Information",
+            content: "Your data is used exclusively to:\n\n• Power AI cycle predictions personalized to your unique rhythm.\n• Generate PCOS risk assessments and health insights.\n• Improve the accuracy of our machine learning models in aggregate and anonymized form only.\n• Send you health reminders and notifications you have opted into.\n• Respond to your support requests."
+          },
+          {
+            icon: "✅", title: "Your Rights",
+            content: "You are in full control of your data:\n\n• **Access**: Download a complete copy of all your data at any time.\n• **Correction**: Update or correct any information in your profile.\n• **Deletion**: Permanently delete your account and all associated data within 30 days of request.\n• **Portability**: Export your health data in standard formats (CSV, JSON).\n• **Opt-out**: Withdraw consent for any non-essential data processing at any time.\n\nTo exercise any of these rights, contact us at shecare382@gmail.com."
+          },
+          {
+            icon: "🍪", title: "Cookies",
+            content: "We use only essential session cookies required for secure login and basic app functionality. We do not use tracking cookies, advertising cookies, or third-party analytics cookies."
+          },
+          {
+            icon: "📧", title: "Contact Us",
+            content: "If you have any questions, concerns, or requests regarding this Privacy Policy, please reach out:\n\n📧 shecare382@gmail.com\n\nWe aim to respond to all privacy-related inquiries within 48 hours."
+          },
+        ].map((section, i) => (
+          <div key={i} style={{ marginBottom: 40, paddingBottom: 40, borderBottom: i < 7 ? "1px solid #F0D8E8" : "none" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
+              <span style={{ fontSize: 24 }}>{section.icon}</span>
+              <h2 style={{ fontFamily: "Cormorant Garamond, serif", fontSize: 26, fontWeight: 700, color: "#2D1040" }}>{section.title}</h2>
+            </div>
+            <div style={{ fontFamily: "Nunito, sans-serif", fontSize: 15, lineHeight: 1.85, color: "#603377" }}>
+              {section.content.split('\n').map((line, j) => (
+                <p key={j} style={{ marginBottom: line === '' ? 8 : 0, fontWeight: line.startsWith('•') ? 400 : 400 }}>
+                  {line.replace(/\*\*(.*?)\*\*/g, '$1')}
+                </p>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ─── TERMS OF SERVICE PAGE ─── */
+function TermsPage({ onBack }) {
+  const isMobile = useMediaQuery("(max-width: 768px)");
+  return (
+    <div style={{ background: "#FFFFFF", minHeight: "100vh" }}>
+      <div style={{ background: "linear-gradient(135deg, #80468E, #2D1040)", padding: "60px 5% 40px" }}>
+        <div style={{ maxWidth: 800, margin: "0 auto" }}>
+          <button onClick={onBack} style={{ background: "rgba(255,255,255,0.2)", border: "none", borderRadius: 50, padding: "8px 18px", color: "white", fontFamily: "Nunito, sans-serif", fontSize: 13, fontWeight: 700, cursor: "pointer", marginBottom: 24 }}>← Back</button>
+          <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 8 }}>
+            <span style={{ fontSize: 36 }}>📜</span>
+            <h1 style={{ fontFamily: "Cormorant Garamond, serif", fontSize: "clamp(32px, 6vw, 56px)", fontWeight: 700, color: "white", lineHeight: 1 }}>Terms of Service</h1>
+          </div>
+          <p style={{ fontFamily: "Nunito, sans-serif", color: "rgba(255,255,255,0.8)", fontSize: 14, marginTop: 8 }}>Last updated: March 8, 2025 · By using SheCare, you agree to these terms.</p>
+        </div>
+      </div>
+      <div style={{ maxWidth: 800, margin: "0 auto", padding: isMobile ? "40px 5%" : "60px 5%" }}>
+        {[
+          {
+            icon: "👋", title: "Welcome to SheCare",
+            content: "These Terms of Service ('Terms') govern your access to and use of SheCare — a women's health platform powered by artificial intelligence. By creating an account or using our services, you agree to be bound by these Terms. Please read them carefully."
+          },
+          {
+            icon: "✅", title: "Eligibility",
+            content: "You must be at least 13 years of age to use SheCare. If you are under 18, you should have parental or guardian consent. By using SheCare, you represent that you meet these eligibility requirements."
+          },
+          {
+            icon: "🌸", title: "Your Account",
+            content: "• You are responsible for maintaining the confidentiality of your account credentials.\n• You agree to provide accurate and complete information during registration.\n• You must notify us immediately at shecare382@gmail.com if you suspect unauthorized access to your account.\n• You may not transfer, sell, or share your account with any other person."
+          },
+          {
+            icon: "⚕️", title: "Medical Disclaimer",
+            content: "SheCare provides health information and wellness insights for educational and personal tracking purposes only. SheCare is NOT a medical device and does NOT provide medical diagnosis, treatment, or professional medical advice.\n\nAll AI predictions — including cycle forecasts and PCOS risk assessments — are based on statistical models and are not a substitute for professional medical consultation. Always consult a qualified healthcare provider for medical advice, diagnosis, or treatment."
+          },
+          {
+            icon: "📱", title: "Acceptable Use",
+            content: "You agree NOT to:\n\n• Use SheCare for any unlawful purpose or in violation of any regulations.\n• Attempt to gain unauthorized access to our systems or another user's account.\n• Upload malicious code, viruses, or any harmful software.\n• Harass, abuse, or harm other community members.\n• Scrape, copy, or redistribute SheCare's content or AI models without written permission.\n• Impersonate any person or entity."
+          },
+          {
+            icon: "🔐", title: "Data & Privacy",
+            content: "Your use of SheCare is also governed by our Privacy Policy, which is incorporated into these Terms by reference. We are committed to keeping your data safe and encrypted at all times. Please review our Privacy Policy to understand our practices."
+          },
+          {
+            icon: "💡", title: "Intellectual Property",
+            content: "All content, design, code, AI models, and branding within SheCare are the intellectual property of SheCare and are protected by copyright and trademark laws. You are granted a limited, non-exclusive, non-transferable license to use SheCare for personal, non-commercial purposes only."
+          },
+          {
+            icon: "🔄", title: "Changes to the Service",
+            content: "We reserve the right to modify, suspend, or discontinue any part of SheCare at any time. We will make reasonable efforts to notify users of significant changes. Continued use of SheCare after changes constitutes your acceptance of the updated Terms."
+          },
+          {
+            icon: "⚖️", title: "Limitation of Liability",
+            content: "To the fullest extent permitted by law, SheCare shall not be liable for any indirect, incidental, special, or consequential damages arising from your use of the platform. Our total liability to you for any claims shall not exceed the amount you paid to SheCare in the twelve months preceding the claim."
+          },
+          {
+            icon: "📧", title: "Contact",
+            content: "Questions about these Terms? We're here to help:\n\n📧 shecare382@gmail.com\n\nWe will respond within 48 business hours."
+          },
+        ].map((section, i) => (
+          <div key={i} style={{ marginBottom: 40, paddingBottom: 40, borderBottom: i < 9 ? "1px solid #F0D8E8" : "none" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
+              <span style={{ fontSize: 24 }}>{section.icon}</span>
+              <h2 style={{ fontFamily: "Cormorant Garamond, serif", fontSize: 26, fontWeight: 700, color: "#2D1040" }}>{section.title}</h2>
+            </div>
+            <div style={{ fontFamily: "Nunito, sans-serif", fontSize: 15, lineHeight: 1.85, color: "#603377" }}>
+              {section.content.split('\n').map((line, j) => (
+                <p key={j} style={{ marginBottom: line === '' ? 8 : 0 }}>{line}</p>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ─── MAIN LANDING PAGE ─── */
 export default function LandingPage() {
   const [activePhase, setActivePhase] = useState(1);
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [lottieReady, setLottieReady] = useState(false);
+  const [page, setPage] = useState("home"); // "home" | "privacy" | "terms"
   const isMobile = useMediaQuery("(max-width: 768px)");
-  
 
   useEffect(() => {
     const fn = () => setScrolled(window.scrollY > 30);
@@ -82,7 +227,6 @@ export default function LandingPage() {
     return () => window.removeEventListener("scroll", fn);
   }, []);
 
-  // Close menu on resize to desktop
   useEffect(() => { if (!isMobile) setMenuOpen(false); }, [isMobile]);
 
   useEffect(() => {
@@ -93,8 +237,14 @@ export default function LandingPage() {
     document.head.appendChild(script);
   }, []);
 
+  // Scroll to top when page changes
+  useEffect(() => { window.scrollTo(0, 0); }, [page]);
+
   const navigate = (path) => { window.location.href = path; };
   const ph = PHASES[activePhase];
+
+  if (page === "privacy") return <PrivacyPage onBack={() => setPage("home")} />;
+  if (page === "terms") return <TermsPage onBack={() => setPage("home")} />;
 
   return (
     <div style={{ background: "#FFFFFF", overflowX: "hidden" }}>
@@ -103,7 +253,6 @@ export default function LandingPage() {
         * { box-sizing: border-box; margin: 0; padding: 0; }
         html { scroll-behavior: smooth; }
 
-        /* Mobile menu overlay */
         .mobile-menu {
           position: fixed; top: 70px; left: 0; right: 0; bottom: 0;
           background: rgba(253,250,252,0.98); backdrop-filter: blur(20px);
@@ -117,7 +266,6 @@ export default function LandingPage() {
           transform: translateY(0); opacity: 1; pointer-events: all;
         }
 
-        /* Hamburger */
         .hamburger { display: flex; flex-direction: column; gap: 5px; cursor: pointer; padding: 8px; }
         .hamburger span {
           display: block; width: 24px; height: 2px;
@@ -129,7 +277,6 @@ export default function LandingPage() {
         .hamburger.open span:nth-child(2) { opacity: 0; transform: scaleX(0); }
         .hamburger.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
 
-        /* Responsive grid helpers */
         .features-grid {
           display: grid;
           grid-template-columns: repeat(3, 1fr);
@@ -228,14 +375,12 @@ export default function LandingPage() {
         transition: "all 0.35s",
       }}>
         <div style={{ maxWidth: 1200, margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "space-between", height: 70 }}>
-          {/* Logo */}
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <div style={{ width: 34, height: 34, borderRadius: "50%", background: "linear-gradient(135deg, #D85E82, #80468E)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, boxShadow: "0 4px 12px rgba(216,94,130,0.35)", flexShrink: 0 }}>🌸</div>
+            <img src="/image.png" alt="SheCare logo" style={{ width: 52, height: 52, objectFit: "contain", flexShrink: 0 }} />
             <span style={{ ...S.h3, fontSize: 22, color: "#80468E" }}>SheCare</span>
             <span style={{ ...S.tag, fontSize: 9, marginLeft: 4 }}>Beta</span>
           </div>
 
-          {/* Desktop nav links */}
           {!isMobile && (
             <div style={{ display: "flex", gap: 32, alignItems: "center" }}>
               {["Features", "Phases", "Community"].map(l => (
@@ -248,7 +393,6 @@ export default function LandingPage() {
             </div>
           )}
 
-          {/* Mobile hamburger */}
           {isMobile && (
             <button
               className={`hamburger ${menuOpen ? "open" : ""}`}
@@ -284,7 +428,6 @@ export default function LandingPage() {
 
         <div style={{ maxWidth: 1200, margin: "0 auto", padding: isMobile ? "60px 5% 40px" : "80px 5% 60px", position: "relative", zIndex: 2, width: "100%" }}>
           <div className="hero-grid">
-            {/* Left */}
             <div>
               <div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "white", border: "1px solid #E8A8BE", borderRadius: 50, padding: "8px 18px", marginBottom: 28, boxShadow: "0 4px 16px rgba(216,94,130,0.18)", flexWrap: "wrap" }}>
                 <span style={{ fontSize: 13 }}>🚀</span>
@@ -312,21 +455,18 @@ export default function LandingPage() {
               </div>
             </div>
 
-            {/* Right — visual */}
             <div style={{ position: "relative", display: "flex", justifyContent: "center", alignItems: "center", minHeight: isMobile ? 280 : 420 }}>
               <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse at center, #E8D0E840 0%, transparent 70%)", borderRadius: "50%" }} />
               {lottieReady
-              ? <LottiePlayer animData={WOMAN_ANIM} style={{ width: "100%", maxWidth: 480, height: "auto", filter: "drop-shadow(0 20px 60px rgba(216,94,130,0.18))" }} />
-              : <div style={{ fontSize: isMobile ? 100 : 140, display: "flex", alignItems: "center", justifyContent: "center" }}>🌸</div>
-            }
+                ? <LottiePlayer animData={WOMAN_ANIM} style={{ width: "100%", maxWidth: 480, height: "auto", filter: "drop-shadow(0 20px 60px rgba(216,94,130,0.18))" }} />
+                : <div style={{ fontSize: isMobile ? 100 : 140, display: "flex", alignItems: "center", justifyContent: "center" }}>🌸</div>
+              }
 
-              {/* Floating badge */}
               <div className="floating-badge" style={{ background: "linear-gradient(135deg, #D85E82, #80468E)", borderRadius: 16, padding: "10px 16px", boxShadow: "0 8px 24px rgba(216,94,130,0.45)", color: "white" }}>
                 <p style={{ fontFamily: "Nunito, sans-serif", fontSize: 10, fontWeight: 800, letterSpacing: "0.8px", textTransform: "uppercase", opacity: 0.85, margin: 0 }}>AI Powered</p>
                 <p style={{ fontFamily: "Cormorant Garamond, serif", fontSize: 22, fontWeight: 700, lineHeight: 1, margin: 0 }}>94% Accuracy</p>
               </div>
 
-              {/* Floating stats */}
               <div className="floating-stats" style={{ background: "white", borderRadius: 16, padding: "12px 18px", boxShadow: "0 8px 32px rgba(128,70,142,0.15)", border: "1px solid #E8D0E8" }}>
                 <p style={{ fontFamily: "Nunito, sans-serif", fontSize: 10, fontWeight: 800, color: "#80468E", textTransform: "uppercase", letterSpacing: "1px", margin: "0 0 4px" }}>Next Period</p>
                 <p style={{ fontFamily: "Cormorant Garamond, serif", fontSize: 28, fontWeight: 700, color: "#2D1040", lineHeight: 1, margin: "0 0 4px" }}>March 28</p>
@@ -483,17 +623,31 @@ export default function LandingPage() {
           <span style={{ fontSize: 22 }}>🌸</span>
           <span style={{ fontFamily: "Cormorant Garamond, serif", fontSize: 22, fontWeight: 700, color: "#E8A8BE" }}>SheCare</span>
         </div>
-        <p style={{ fontFamily: "Nunito, sans-serif", fontSize: 13, color: "#9A70A8" }}>Built with 💗 for women everywhere · Privacy-first · No data sold · Ever.</p>
+        {/* ✅ UPDATED: "Data safe & encrypted" instead of "No data sold" */}
+        <p style={{ fontFamily: "Nunito, sans-serif", fontSize: 13, color: "#9A70A8" }}>Built with 💗 for women everywhere · Privacy-first · Data safe & encrypted · Always.</p>
         <p style={{ fontFamily: "Nunito, sans-serif", fontSize: 12, color: "#6B4080", marginTop: 8 }}>© 2025 SheCare · Launching March 8 · International Women's Day</p>
         <div style={{ display: "flex", justifyContent: "center", gap: isMobile ? 16 : 28, marginTop: 20, flexWrap: "wrap" }}>
-          {["Privacy Policy", "Terms of Service", "Contact"].map(l => (
-            <a key={l} href={`#${l.toLowerCase()}`}
-              style={{ fontFamily: "Nunito, sans-serif", fontSize: 14, fontWeight: 600, textDecoration: "none", color: "#9A70A8", transition: "color 0.2s" }}
-              onMouseEnter={e => e.target.style.color = "#D85E82"}
-              onMouseLeave={e => e.target.style.color = "#9A70A8"}>
-              {l}
-            </a>
-          ))}
+          {/* Privacy Policy */}
+          <button onClick={() => setPage("privacy")}
+            style={{ fontFamily: "Nunito, sans-serif", fontSize: 14, fontWeight: 600, textDecoration: "none", color: "#9A70A8", transition: "color 0.2s", background: "none", border: "none", cursor: "pointer" }}
+            onMouseEnter={e => e.target.style.color = "#D85E82"}
+            onMouseLeave={e => e.target.style.color = "#9A70A8"}>
+            Privacy Policy
+          </button>
+          {/* Terms of Service */}
+          <button onClick={() => setPage("terms")}
+            style={{ fontFamily: "Nunito, sans-serif", fontSize: 14, fontWeight: 600, textDecoration: "none", color: "#9A70A8", transition: "color 0.2s", background: "none", border: "none", cursor: "pointer" }}
+            onMouseEnter={e => e.target.style.color = "#D85E82"}
+            onMouseLeave={e => e.target.style.color = "#9A70A8"}>
+            Terms of Service
+          </button>
+          {/* Contact → mailto */}
+          <a href="mailto:shecare382@gmail.com"
+            style={{ fontFamily: "Nunito, sans-serif", fontSize: 14, fontWeight: 600, textDecoration: "none", color: "#9A70A8", transition: "color 0.2s" }}
+            onMouseEnter={e => e.target.style.color = "#D85E82"}
+            onMouseLeave={e => e.target.style.color = "#9A70A8"}>
+            Contact
+          </a>
         </div>
       </footer>
     </div>

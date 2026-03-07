@@ -6,56 +6,43 @@ const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
 
-  const [user, setUser] = useState(null);
+  const [user, setUser]       = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Load user session on app start
   useEffect(() => {
-
     const token = getToken();
-
-    if (token) {
-      setUser({ token });
-    }
-
+    if (token) setUser({ token });
     setLoading(false);
-
   }, []);
 
-  // Login function
-  const login = async (credentials) => {
-
+  const login = async (credentials, remember = false) => {
     const response = await loginAPI(credentials);
-
-    saveToken(response.token);
-
-    setUser({
-      name: response.name,
-      role: response.role,
-      token: response.token
-    });
-
+    saveToken(response.token, remember);
+    setUser({ name: response.name, role: response.role, token: response.token });
     return response;
   };
 
-  // Logout
+  // ✅ Used by Google login — token already obtained from backend, just save it
+  const saveTokenDirectly = (token, remember = false) => {
+    saveToken(token, remember);
+    setUser({ token });
+  };
+
   const logout = () => {
-
     removeToken();
+    localStorage.removeItem("shecare_user");
     setUser(null);
-
   };
 
   return (
-    <AuthContext.Provider
-      value={{
-        user,
-        login,
-        logout,
-        loading,
-        isAuthenticated: !!user
-      }}
-    >
+    <AuthContext.Provider value={{
+      user,
+      login,
+      logout,
+      saveTokenDirectly,
+      loading,
+      isAuthenticated: !!user,
+    }}>
       {children}
     </AuthContext.Provider>
   );

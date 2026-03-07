@@ -44,19 +44,18 @@ export function Sidebar({ current }) {
           display: "flex", alignItems: "center", gap: 10,
         }}>
           <img
-            src="/image.png"
+            src="image.png"
             alt="SheCare"
-            style={{ width: 36, height: 36, borderRadius: "50%", objectFit: "cover", boxShadow: `0 4px 12px rgba(216,94,130,0.35)` }}
+            style={{ width: 64, height: 64, objectFit: "contain" }}
             onError={e => {
               e.target.style.display = "none";
               e.target.nextSibling.style.display = "flex";
             }}
           />
           <div style={{
-            display: "none", width: 36, height: 36, borderRadius: "50%",
-            background: C.grad,
+            display: "none", width: 56, height: 56,
             alignItems: "center", justifyContent: "center",
-            fontSize: 18, boxShadow: `0 4px 12px rgba(216,94,130,0.35)`,
+            fontSize: 28,
           }}>🌸</div>
           <span style={{
             fontFamily: "'Cormorant Garamond', serif", fontSize: 22,
@@ -174,15 +173,15 @@ function MobileTopBar({ current }) {
         display: "flex", alignItems: "center", gap: 8,
       }}>
         <img
-          src="/image.png"
+          src="image.png"
           alt="SheCare"
-          style={{ width: 30, height: 30, borderRadius: "50%", objectFit: "cover" }}
+          style={{ width: 44, height: 44, objectFit: "contain" }}
           onError={e => {
             e.target.style.display = "none";
             e.target.nextSibling.style.display = "inline";
           }}
         />
-        <span style={{ display: "none", fontSize: 20 }}>🌸</span>
+        <span style={{ display: "none", fontSize: 28 }}>🌸</span>
         <span style={{
           fontFamily: "'Cormorant Garamond', serif", fontSize: 20,
           fontWeight: 700, color: C.primaryDark,

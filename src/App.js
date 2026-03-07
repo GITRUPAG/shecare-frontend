@@ -9,6 +9,8 @@ import PCOSPage from "./pages/PCOSPage";
 import CommunityPage from "./pages/CommunityPage";
 import HealthTipsPage from "./pages/HealthTipsPage";
 import ProfilePage from "./pages/ProfilePage";
+import ForgotPasswordPage from "./pages/ForgotPasswordPage";
+import ResetPasswordPage from "./pages/ResetPasswordPage";
 
 import ProtectedRoute from "./components/ProtectedRoute";
 
@@ -20,6 +22,9 @@ export default function App() {
         {/* Public pages */}
         <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<AuthPage />} />
+        <Route path="/auth" element={<AuthPage />} />
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="/reset-password"  element={<ResetPasswordPage />} />
 
         {/* Protected pages */}
         <Route

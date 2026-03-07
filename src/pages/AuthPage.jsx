@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { signInWithPopup } from "firebase/auth";
+import { auth, googleProvider } from "../firebase";
 
 const C = {
   pink:       "#D85E82",
@@ -33,6 +35,21 @@ async function apiRegister(payload) {
   return text;
 }
 
+async function apiGoogleLogin(firebaseIdToken) {
+  const res = await fetch(`${API_BASE}/api/auth/google`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ token: firebaseIdToken }),
+  });
+  const text = await res.text();
+  if (!res.ok) {
+    let msg = text;
+    try { msg = JSON.parse(text)?.message || text; } catch {}
+    throw new Error(msg || "Google login failed.");
+  }
+  try { return JSON.parse(text); } catch { return text; }
+}
+
 function InputField({ label, type = "text", placeholder, value, onChange, icon }) {
   const [showPwd, setShowPwd] = useState(false);
   const [focused, setFocused] = useState(false);
@@ -59,7 +76,8 @@ function InputField({ label, type = "text", placeholder, value, onChange, icon }
           }}
         />
         {type === "password" && (
-          <button type="button" onClick={() => setShowPwd(p => !p)} style={{ position: "absolute", right: 14, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", fontSize: 14, color: C.textSoft, padding: 0 }}>
+          <button type="button" onClick={() => setShowPwd(p => !p)}
+            style={{ position: "absolute", right: 14, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", fontSize: 14, color: C.textSoft, padding: 0 }}>
             {showPwd ? "🙈" : "👁️"}
           </button>
         )}
@@ -100,41 +118,74 @@ function SubmitButton({ loading, children, onClick }) {
   );
 }
 
-function SocialButton({ icon, label }) {
-  const [hov, setHov] = useState(false);
+function GoogleButton({ onSuccess, onError }) {
+  const [loading, setLoading] = useState(false);
+  const { saveTokenDirectly } = useAuth();
+
+  const handleGoogle = async () => {
+    setLoading(true);
+    try {
+      const result   = await signInWithPopup(auth, googleProvider);
+      const idToken  = await result.user.getIdToken();
+      const response = await apiGoogleLogin(idToken);
+      saveTokenDirectly(response.token, false);
+      localStorage.setItem("shecare_user", JSON.stringify({
+        name:     response.name     || "",
+        username: response.username || "",
+      }));
+      onSuccess();
+    } catch (err) {
+      if (err.code === "auth/popup-closed-by-user") { setLoading(false); return; }
+      onError(err.message || "Google sign-in failed. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
-    <button onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
+    <button onClick={handleGoogle} disabled={loading}
+      onMouseEnter={e => { if (!loading) { e.currentTarget.style.borderColor = C.pinkLight; e.currentTarget.style.background = "#FEF4F8"; }}}
+      onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.background = loading ? "#F8F8F8" : "white"; }}
       style={{
         flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
-        border: `1.5px solid ${hov ? C.pinkLight : C.border}`, borderRadius: 12,
-        padding: "12px 16px", background: hov ? "#FEF4F8" : "white",
+        border: `1.5px solid ${C.border}`, borderRadius: 12,
+        padding: "12px 16px", background: loading ? "#F8F8F8" : "white",
         fontFamily: "'Nunito', sans-serif", fontSize: 14, fontWeight: 700, color: C.textMid,
-        cursor: "pointer", transition: "all 0.2s",
-      }}
-    ><span>{icon}</span>{label}</button>
+        cursor: loading ? "not-allowed" : "pointer", transition: "all 0.2s",
+        opacity: loading ? 0.7 : 1,
+      }}>
+      {loading ? (
+        <span style={{ fontSize: 14 }}>⏳</span>
+      ) : (
+        <svg width="16" height="16" viewBox="0 0 48 48">
+          <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+          <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+          <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+          <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+        </svg>
+      )}
+      {loading ? "Signing in…" : "Google"}
+    </button>
   );
 }
 
-// ✅ FIXED: Uses context login instead of saveToken directly
 function LoginForm() {
-  const navigate = useNavigate();
+  const navigate = useNavigate(); // ✅ already have navigate
   const { login } = useAuth();
-  const [id, setId]           = useState("");
-  const [pwd, setPwd]         = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError]     = useState("");
+  const [id, setId]             = useState("");
+  const [pwd, setPwd]           = useState("");
+  const [loading, setLoading]   = useState(false);
+  const [error, setError]       = useState("");
+  const [remember, setRemember] = useState(false);
 
   const submit = async () => {
     setError("");
     if (!id.trim() || !pwd) { setError("Please fill in all fields."); return; }
     setLoading(true);
     try {
-      // ✅ login() from context: calls API, saves token AND updates user state
-      const response = await login({ identifier: id.trim(), password: pwd });
+      const response = await login({ identifier: id.trim(), password: pwd }, remember);
       localStorage.setItem("shecare_user", JSON.stringify({
-        name: response.name,
-        role: response.role,
-        username: response.username,
+        name: response.name, username: response.username,
       }));
       navigate("/dashboard");
     } catch (err) {
@@ -151,10 +202,16 @@ function LoginForm() {
       <InputField label="Password" type="password" placeholder="Your password" value={pwd} onChange={setPwd} icon="🔒" />
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
-          <input type="checkbox" style={{ accentColor: C.pink, width: 15, height: 15 }} />
+          <input type="checkbox" checked={remember} onChange={e => setRemember(e.target.checked)}
+            style={{ accentColor: C.pink, width: 15, height: 15 }} />
           <span style={{ fontFamily: "'Nunito', sans-serif", fontSize: 13, color: C.textSoft }}>Keep me signed in</span>
         </label>
-        <button style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "'Nunito', sans-serif", fontSize: 13, fontWeight: 700, color: C.pink }}>Forgot password?</button>
+        {/* ✅ NOW navigates to /forgot-password */}
+        <button
+          onClick={() => navigate("/forgot-password")}
+          style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "'Nunito', sans-serif", fontSize: 13, fontWeight: 700, color: C.pink }}>
+          Forgot password?
+        </button>
       </div>
       <SubmitButton loading={loading} onClick={submit}>{loading ? "Signing in…" : "Sign In →"}</SubmitButton>
       <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
@@ -163,14 +220,15 @@ function LoginForm() {
         <div style={{ flex: 1, height: 1, background: C.border }} />
       </div>
       <div style={{ display: "flex", gap: 10 }}>
-        <SocialButton icon="🌐" label="Google" />
-        <SocialButton icon="🍎" label="Apple" />
+        <GoogleButton
+          onSuccess={() => navigate("/dashboard")}
+          onError={msg => setError(msg)}
+        />
       </div>
     </div>
   );
 }
 
-// ✅ FIXED: After register, auto-logs in via context so isAuthenticated becomes true
 function RegisterForm() {
   const navigate = useNavigate();
   const { login } = useAuth();
@@ -188,19 +246,10 @@ function RegisterForm() {
     }
     setLoading(true);
     try {
-      // Step 1: Register the account
-      await apiRegister({
-        username: username.trim(),
-        email: email.trim(),
-        phoneNumber: phoneNumber.trim(),
-        password,
-      });
-      // Step 2: ✅ Auto-login via context so isAuthenticated updates immediately
-      const response = await login({ identifier: email.trim(), password });
+      await apiRegister({ username: username.trim(), email: email.trim(), phoneNumber: phoneNumber.trim(), password });
+      const response = await login({ identifier: email.trim(), password }, false);
       localStorage.setItem("shecare_user", JSON.stringify({
-        name: response.name,
-        role: response.role,
-        username: response.username,
+        name: response.name, username: response.username,
       }));
       setSuccess("Account created! Redirecting…");
       setTimeout(() => navigate("/dashboard"), 1500);
@@ -228,6 +277,17 @@ function RegisterForm() {
         </p>
       </div>
       <SubmitButton loading={loading} onClick={submit}>{loading ? "Creating account…" : "Create Account →"}</SubmitButton>
+      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+        <div style={{ flex: 1, height: 1, background: C.border }} />
+        <span style={{ fontFamily: "'Nunito', sans-serif", fontSize: 12, color: C.textSoft, fontWeight: 600 }}>or sign up with</span>
+        <div style={{ flex: 1, height: 1, background: C.border }} />
+      </div>
+      <div style={{ display: "flex", gap: 10 }}>
+        <GoogleButton
+          onSuccess={() => navigate("/dashboard")}
+          onError={msg => setError(msg)}
+        />
+      </div>
     </div>
   );
 }
@@ -245,27 +305,21 @@ function LeftPanel() {
       <div style={{ position: "absolute", top: 60, right: 30, width: 150, height: 150, borderRadius: "50%", border: "1px solid rgba(216,94,130,0.15)", pointerEvents: "none" }} />
       <div style={{ position: "absolute", top: 36, right: 6, width: 200, height: 200, borderRadius: "50%", border: "1px solid rgba(216,94,130,0.08)", pointerEvents: "none" }} />
       <div style={{ position: "absolute", bottom: 90, left: 30, width: 90, height: 90, borderRadius: "50%", border: "1px solid rgba(176,102,192,0.18)", pointerEvents: "none" }} />
-
       <div style={{ position: "relative", zIndex: 3, display: "flex", alignItems: "center", gap: 12 }}>
         <div style={{ width: 40, height: 40, borderRadius: "50%", background: "rgba(255,255,255,0.55)", border: "1px solid rgba(216,94,130,0.25)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20 }}>🌸</div>
         <span style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 24, fontWeight: 700, color: C.pinkDark }}>SheCare</span>
       </div>
-
       <div style={{ position: "relative", zIndex: 3, flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", paddingBottom: 24 }}>
         <div style={{ display: "inline-flex", alignItems: "center", gap: 8, marginBottom: 22, background: "rgba(255,255,255,0.55)", borderRadius: 50, padding: "7px 16px", border: "1px solid rgba(216,94,130,0.20)", width: "fit-content", backdropFilter: "blur(8px)" }}>
           <div style={{ width: 6, height: 6, borderRadius: "50%", background: C.pink }} />
           <span style={{ fontFamily: "'Nunito', sans-serif", fontSize: 11, fontWeight: 800, color: C.pinkDark, letterSpacing: "0.8px", textTransform: "uppercase" }}>Trusted by 12,000+ Women</span>
         </div>
-
         <h2 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "clamp(36px, 3vw, 52px)", fontWeight: 700, color: C.textDark, lineHeight: 1.1, letterSpacing: "-1px", marginBottom: 16 }}>
-          Your health<br />journey<br />
-          <span style={{ fontStyle: "italic", color: C.pink }}>starts here.</span>
+          Your health<br />journey<br /><span style={{ fontStyle: "italic", color: C.pink }}>starts here.</span>
         </h2>
-
         <p style={{ fontFamily: "'Nunito', sans-serif", fontSize: 14, color: C.textMid, lineHeight: 1.78, marginBottom: 28, maxWidth: 320, opacity: 0.85 }}>
           AI-powered cycle predictions, PCOS early detection, and a warm anonymous community — all in one place.
         </p>
-
         <div style={{ display: "flex", flexDirection: "column", gap: 9, marginBottom: 32 }}>
           {[
             { icon: "🧠", text: "AI Period Prediction", sub: "94% accuracy" },
@@ -282,7 +336,6 @@ function LeftPanel() {
             </div>
           ))}
         </div>
-
         <div style={{ display: "flex", gap: 10 }}>
           {[["94%", "Accuracy"], ["12K+", "Women"], ["< 3min", "Screening"]].map(([v, l]) => (
             <div key={l} style={{ flex: 1, textAlign: "center", background: "rgba(255,255,255,0.50)", borderRadius: 14, padding: "14px 6px", border: "1px solid rgba(216,94,130,0.14)" }}>
@@ -292,7 +345,6 @@ function LeftPanel() {
           ))}
         </div>
       </div>
-
       <p style={{ fontFamily: "'Nunito', sans-serif", fontSize: 11, color: C.textSoft, position: "relative", zIndex: 3, margin: 0, opacity: 0.7 }}>
         Launching March 8, 2025 · International Women's Day
       </p>
@@ -317,34 +369,27 @@ export default function AuthPage() {
           .mobile-logo { display: flex !important; }
         }
       `}</style>
-
       <div className="auth-left"><LeftPanel /></div>
-
       <div className="auth-right" style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: "48px 56px", overflowY: "auto" }}>
         <div style={{ width: "100%", maxWidth: 440 }}>
-
           <button onClick={() => navigate("/")} className="mobile-logo" style={{ display: "none", alignItems: "center", gap: 10, background: "none", border: "none", cursor: "pointer", marginBottom: 36 }}>
             <span style={{ fontSize: 24 }}>🌸</span>
             <span style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 24, fontWeight: 700, color: C.pinkDark }}>SheCare</span>
           </button>
-
           <button onClick={() => navigate("/")}
             onMouseEnter={e => e.currentTarget.style.color = C.pink}
             onMouseLeave={e => e.currentTarget.style.color = C.textSoft}
             style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer", marginBottom: 36, padding: 0, fontFamily: "'Nunito', sans-serif", fontSize: 13, fontWeight: 700, color: C.textSoft, transition: "color 0.2s" }}>
             ← Back to home
           </button>
-
           <div style={{ marginBottom: 28 }}>
             <h1 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 40, fontWeight: 700, lineHeight: 1.1, color: C.textDark, marginBottom: 8, letterSpacing: "-0.5px" }}>
-              {tab === "login" ? "Welcome back" : "Join SheCare"}
-              <span style={{ color: C.pink }}> 🌸</span>
+              {tab === "login" ? "Welcome back" : "Join SheCare"}<span style={{ color: C.pink }}> 🌸</span>
             </h1>
             <p style={{ fontFamily: "'Nunito', sans-serif", fontSize: 15, color: C.textSoft, lineHeight: 1.6 }}>
               {tab === "login" ? "Sign in to continue your wellness journey." : "Create your free account and start tracking today."}
             </p>
           </div>
-
           <div style={{ display: "flex", background: C.lilacPale, borderRadius: 16, padding: 5, marginBottom: 28, border: `1px solid ${C.border}` }}>
             {[["login", "Sign In"], ["register", "Create Account"]].map(([t, label]) => (
               <button key={t} onClick={() => setTab(t)} style={{
@@ -357,16 +402,13 @@ export default function AuthPage() {
               }}>{label}</button>
             ))}
           </div>
-
           {tab === "login" ? <LoginForm /> : <RegisterForm />}
-
           <p style={{ textAlign: "center", fontFamily: "'Nunito', sans-serif", fontSize: 14, color: C.textSoft, marginTop: 24 }}>
             {tab === "login" ? "New to SheCare? " : "Already have an account? "}
             <button onClick={() => setTab(tab === "login" ? "register" : "login")} style={{ background: "none", border: "none", cursor: "pointer", color: C.pink, fontWeight: 800, fontFamily: "'Nunito', sans-serif", fontSize: 14 }}>
               {tab === "login" ? "Create account" : "Sign in instead"}
             </button>
           </p>
-
           <p style={{ textAlign: "center", fontFamily: "'Nunito', sans-serif", fontSize: 11, color: C.textSoft, marginTop: 16, lineHeight: 1.6 }}>
             By continuing you agree to our{" "}
             <span style={{ color: C.pink, cursor: "pointer", fontWeight: 700 }}>Terms</span>{" & "}
