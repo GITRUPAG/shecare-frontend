@@ -52,10 +52,9 @@ function useIsMobile() {
   return isMobile;
 }
 
-// Build a map: ISO date → log object (for edit icon lookup)
 function buildPastPeriodMap(logs) {
-  const map = new Map(); // ISO date → log
-  const set = new Set(); // ISO date → true (for coloring)
+  const map = new Map();
+  const set = new Set();
   if (!logs?.length) return { map, set };
   for (const log of logs) {
     if (!log.startDate) continue;
@@ -65,7 +64,6 @@ function buildPastPeriodMap(logs) {
     while (cur <= end) {
       const iso = cur.toISOString().slice(0, 10);
       set.add(iso);
-      // Map the startDate ISO to the log — so clicking any day in a range finds the log
       if (!map.has(iso)) map.set(iso, log);
       cur.setDate(cur.getDate() + 1);
     }
@@ -109,42 +107,31 @@ function EditLogModal({ log, onClose, onSave }) {
           <h2 style={{fontFamily:"'Cormorant Garamond',serif",fontSize:22,fontWeight:700,color:C.textDark,margin:0}}>✏️ Edit Period Log</h2>
           <button onClick={onClose} style={{background:"none",border:"none",cursor:"pointer",fontSize:20,color:C.textSoft,lineHeight:1}}>✕</button>
         </div>
-
         {err && (
           <div style={{background:"#FFF0F4",border:"1.5px solid #F4B8CB",borderRadius:10,padding:"10px 14px",marginBottom:14,fontFamily:"'Nunito',sans-serif",fontSize:13,color:C.primaryDark,fontWeight:600}}>
             ⚠️ {err}
           </div>
         )}
-
         <div style={{display:"flex",flexDirection:"column",gap:16}}>
           <div>
-            <label style={{fontFamily:"'Nunito',sans-serif",fontSize:12,fontWeight:800,color:C.textMid,textTransform:"uppercase",letterSpacing:"0.8px",display:"block",marginBottom:6}}>
-              Period Start
-            </label>
+            <label style={{fontFamily:"'Nunito',sans-serif",fontSize:12,fontWeight:800,color:C.textMid,textTransform:"uppercase",letterSpacing:"0.8px",display:"block",marginBottom:6}}>Period Start</label>
             <input type="date" value={startDate} onChange={e=>setStartDate(e.target.value)}
               max={new Date().toISOString().slice(0,10)}
               style={{width:"100%",padding:"11px 14px",border:`2px solid ${C.border}`,borderRadius:12,fontFamily:"'Nunito',sans-serif",fontSize:14,color:C.textDark,outline:"none",boxSizing:"border-box",background:C.sand}}
-              onFocus={e=>e.target.style.borderColor=C.primary}
-              onBlur={e=>e.target.style.borderColor=C.border}
+              onFocus={e=>e.target.style.borderColor=C.primary} onBlur={e=>e.target.style.borderColor=C.border}
             />
           </div>
           <div>
-            <label style={{fontFamily:"'Nunito',sans-serif",fontSize:12,fontWeight:800,color:C.textMid,textTransform:"uppercase",letterSpacing:"0.8px",display:"block",marginBottom:6}}>
-              Period End
-            </label>
+            <label style={{fontFamily:"'Nunito',sans-serif",fontSize:12,fontWeight:800,color:C.textMid,textTransform:"uppercase",letterSpacing:"0.8px",display:"block",marginBottom:6}}>Period End</label>
             <input type="date" value={endDate} onChange={e=>setEndDate(e.target.value)}
               min={startDate} max={new Date().toISOString().slice(0,10)}
               style={{width:"100%",padding:"11px 14px",border:`2px solid ${C.border}`,borderRadius:12,fontFamily:"'Nunito',sans-serif",fontSize:14,color:C.textDark,outline:"none",boxSizing:"border-box",background:C.sand}}
-              onFocus={e=>e.target.style.borderColor=C.primary}
-              onBlur={e=>e.target.style.borderColor=C.border}
+              onFocus={e=>e.target.style.borderColor=C.primary} onBlur={e=>e.target.style.borderColor=C.border}
             />
           </div>
         </div>
-
         <div style={{display:"flex",gap:10,marginTop:24}}>
-          <button onClick={onClose} style={{flex:1,padding:"12px",borderRadius:12,border:`2px solid ${C.border}`,background:"none",fontFamily:"'Nunito',sans-serif",fontSize:14,fontWeight:700,color:C.textSoft,cursor:"pointer"}}>
-            Cancel
-          </button>
+          <button onClick={onClose} style={{flex:1,padding:"12px",borderRadius:12,border:`2px solid ${C.border}`,background:"none",fontFamily:"'Nunito',sans-serif",fontSize:14,fontWeight:700,color:C.textSoft,cursor:"pointer"}}>Cancel</button>
           <button onClick={handleSave} disabled={saving} style={{flex:2,padding:"12px",borderRadius:12,border:"none",background:saving?C.border:C.grad,color:"#fff",fontFamily:"'Nunito',sans-serif",fontSize:14,fontWeight:700,cursor:saving?"not-allowed":"pointer",boxShadow:`0 4px 16px ${C.primaryGlow}`}}>
             {saving ? "Saving…" : "Save Changes"}
           </button>
@@ -157,12 +144,7 @@ function EditLogModal({ log, onClose, onSave }) {
 // ─── Delete Confirm Modal ─────────────────────────────────────────────────────
 function DeleteConfirmModal({ log, onClose, onConfirm }) {
   const [deleting, setDeleting] = useState(false);
-
-  const handleDelete = async () => {
-    setDeleting(true);
-    await onConfirm(log.id);
-    onClose();
-  };
+  const handleDelete = async () => { setDeleting(true); await onConfirm(log.id); onClose(); };
 
   return (
     <div style={{position:"fixed",inset:0,background:"rgba(44,16,40,0.45)",zIndex:1000,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
@@ -173,9 +155,7 @@ function DeleteConfirmModal({ log, onClose, onConfirm }) {
           This will permanently remove the log for <strong style={{color:C.textDark}}>{fmt(log.startDate)}{log.endDate && log.endDate !== log.startDate ? ` – ${fmt(log.endDate)}` : ""}</strong>. This action cannot be undone.
         </p>
         <div style={{display:"flex",gap:10}}>
-          <button onClick={onClose} style={{flex:1,padding:"12px",borderRadius:12,border:`2px solid ${C.border}`,background:"none",fontFamily:"'Nunito',sans-serif",fontSize:14,fontWeight:700,color:C.textSoft,cursor:"pointer"}}>
-            Cancel
-          </button>
+          <button onClick={onClose} style={{flex:1,padding:"12px",borderRadius:12,border:`2px solid ${C.border}`,background:"none",fontFamily:"'Nunito',sans-serif",fontSize:14,fontWeight:700,color:C.textSoft,cursor:"pointer"}}>Cancel</button>
           <button onClick={handleDelete} disabled={deleting} style={{flex:2,padding:"12px",borderRadius:12,border:"none",background:deleting?"#ccc":"linear-gradient(135deg,#EF4444,#DC2626)",color:"#fff",fontFamily:"'Nunito',sans-serif",fontSize:14,fontWeight:700,cursor:deleting?"not-allowed":"pointer",boxShadow:"0 4px 16px rgba(239,68,68,0.30)"}}>
             {deleting ? "Deleting…" : "Yes, Delete"}
           </button>
@@ -200,15 +180,12 @@ function PeriodCalendar({ startDate, endDate, onStartDate, onEndDate, pastPeriod
     if (iso > todayISO) return;
     if (iso === startDate && !endDate) { onStartDate(""); return; }
     if (iso === endDate)               { onEndDate("");   return; }
-    if (!startDate) {
-      onStartDate(iso);
-    } else if (!endDate) {
+    if (!startDate) { onStartDate(iso); }
+    else if (!endDate) {
       if (iso < startDate) { onStartDate(iso); }
       else if (iso === startDate) { onStartDate(""); }
       else { onEndDate(iso); }
-    } else {
-      onStartDate(iso); onEndDate("");
-    }
+    } else { onStartDate(iso); onEndDate(""); }
   };
 
   const prevMonth = () => { if (vm===0){setVy(y=>y-1);setVm(11);}else setVm(m=>m-1); };
@@ -222,8 +199,7 @@ function PeriodCalendar({ startDate, endDate, onStartDate, onEndDate, pastPeriod
     return null;
   };
 
-  const isPast = iso => showHistory && pastPeriodDates.has(iso);
-
+  const isPast   = iso => showHistory && pastPeriodDates.has(iso);
   const predState = iso => {
     if (!prediction) return null;
     if (iso === prediction.ovulationDay)                                            return "ovulation";
@@ -257,23 +233,22 @@ function PeriodCalendar({ startDate, endDate, onStartDate, onEndDate, pastPeriod
       <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:"3px 0"}}>
         {cells.map((day,idx) => {
           if (!day) return <div key={`e${idx}`}/>;
-          const iso     = toISO(vy, vm, day);
-          const future  = iso > todayISO;
-          const selSt   = newSelState(iso);
-          const pastP   = isPast(iso);
-          const pred    = predState(iso);
-          const isToday = iso === todayISO;
-          const logForDay = pastPeriodMap.get(iso);
-          // Only show edit icon on the startDate of each log
+          const iso        = toISO(vy, vm, day);
+          const future     = iso > todayISO;
+          const selSt      = newSelState(iso);
+          const pastP      = isPast(iso);
+          const pred       = predState(iso);
+          const isToday    = iso === todayISO;
+          const logForDay  = pastPeriodMap.get(iso);
           const isLogStart = logForDay && logForDay.startDate === iso;
           const isHovering = hoveredPast === iso;
-
           const isSelRange = selSt === "selRange";
           const isSelEdge  = selSt === "selStart" || selSt === "selEnd" || selSt === "selSingle";
 
+          // ── CHANGED: light red instead of pink for past period dates ──
           const cellFill =
             isSelRange                          ? C.primaryGlow :
-            pastP && !isSelEdge                 ? "rgba(216,94,130,0.12)" :
+            pastP && !isSelEdge                 ? "rgba(220,38,38,0.10)" :
             pred === "ovulation" && !isSelEdge  ? "rgba(217,119,6,0.13)" :
             pred === "fertile"   && !isSelEdge  ? "rgba(22,163,74,0.12)" :
             "transparent";
@@ -282,14 +257,14 @@ function PeriodCalendar({ startDate, endDate, onStartDate, onEndDate, pastPeriod
           if (isSelEdge)                 btnBg = C.primary;
           else if (pred === "ovulation") btnBg = "rgba(217,119,6,0.22)";
           else if (pred === "fertile")   btnBg = "rgba(22,163,74,0.20)";
-          else if (pastP)                btnBg = "rgba(216,94,130,0.18)";
+          else if (pastP)                btnBg = "rgba(220,38,38,0.18)"; // ← light red (was pink)
 
           let btnColor = future ? C.textSoft+"55" : C.textDark;
           if (isSelEdge)                             btnColor = "#fff";
           else if (isToday && !pastP && !isSelEdge)  btnColor = C.primary;
           else if (pred === "ovulation")             btnColor = "#92400E";
           else if (pred === "fertile")               btnColor = "#14532D";
-          else if (pastP)                            btnColor = C.primaryDark;
+          else if (pastP)                            btnColor = "#B91C1C"; // ← dark red (was pink C.primaryDark)
 
           let btnBorder = "2px solid transparent";
           if (isToday && !isSelEdge) btnBorder = `2px solid ${C.primary}`;
@@ -324,7 +299,6 @@ function PeriodCalendar({ startDate, endDate, onStartDate, onEndDate, pastPeriod
                 {day}
               </button>
 
-              {/* ✅ Edit pencil icon — appears on hover over a past period start date */}
               {isLogStart && isHovering && onEditDay && (
                 <button
                   onClick={e=>{ e.stopPropagation(); onEditDay(logForDay); }}
@@ -337,9 +311,7 @@ function PeriodCalendar({ startDate, endDate, onStartDate, onEndDate, pastPeriod
                     fontSize:8, color:"#fff", boxShadow:"0 2px 6px rgba(0,0,0,0.2)",
                     zIndex:10, lineHeight:1, padding:0,
                   }}
-                >
-                  ✎
-                </button>
+                >✎</button>
               )}
             </div>
           );
@@ -347,9 +319,9 @@ function PeriodCalendar({ startDate, endDate, onStartDate, onEndDate, pastPeriod
       </div>
 
       <div style={{display:"flex",alignItems:"center",gap:12,marginTop:14,paddingTop:12,borderTop:`1px solid ${C.border}`,flexWrap:"wrap"}}>
-        <LegendDot color={C.primary}                 label="Start / End" circle />
-        {showHistory && <LegendDot color="rgba(216,94,130,0.18)" label="Past period" />}
-        <LegendDot color="transparent"               label="Today"       border={`2px solid ${C.primary}`} circle />
+        <LegendDot color={C.primary}                  label="Start / End" circle />
+        {showHistory && <LegendDot color="rgba(220,38,38,0.18)" label="Past period" />}
+        <LegendDot color="transparent"                label="Today"       border={`2px solid ${C.primary}`} circle />
         {prediction && <>
           <LegendDot color="rgba(22,163,74,0.20)"  label="Fertile"   />
           <LegendDot color="rgba(217,119,6,0.22)"  label="Ovulation" />
@@ -383,62 +355,28 @@ function PastPeriodsList({ logs, onEdit, onDelete }) {
       <p style={{fontFamily:"'Nunito', sans-serif",fontSize:13,color:C.textSoft,fontStyle:"italic"}}>No past period logs yet.</p>
     </div>
   );
-
   return (
     <div style={{display:"flex",flexDirection:"column",gap:0}}>
       {logs.map((log, i) => (
-        <div key={log.id || i} style={{
-          display:"flex", alignItems:"center", gap:12,
-          padding:"14px 0",
-          borderBottom: i < logs.length-1 ? `1px solid ${C.bgLight}` : "none",
-        }}>
+        <div key={log.id || i} style={{display:"flex",alignItems:"center",gap:12,padding:"14px 0",borderBottom:i<logs.length-1?`1px solid ${C.bgLight}`:"none"}}>
           <div style={{width:10,height:10,borderRadius:"50%",background:C.primary,flexShrink:0}}/>
-
-          <div style={{flex:1, minWidth:0}}>
+          <div style={{flex:1,minWidth:0}}>
             <span style={{fontFamily:"'Cormorant Garamond', serif",fontSize:18,fontWeight:700,color:C.textDark}}>
               {fmt(log.startDate)}{log.endDate && log.endDate !== log.startDate ? ` – ${fmt(log.endDate)}` : ""}
             </span>
             {log.duration && (
-              <span style={{fontFamily:"'Nunito', sans-serif",fontSize:11,fontWeight:700,padding:"2px 10px",borderRadius:20,background:C.bgLight,color:C.primaryDark,marginLeft:8}}>
-                {log.duration}d
-              </span>
+              <span style={{fontFamily:"'Nunito', sans-serif",fontSize:11,fontWeight:700,padding:"2px 10px",borderRadius:20,background:C.bgLight,color:C.primaryDark,marginLeft:8}}>{log.duration}d</span>
             )}
           </div>
-
-          {/* ✅ Edit & Delete buttons */}
           <div style={{display:"flex",gap:6,flexShrink:0}}>
-            <button
-              onClick={() => onEdit(log)}
-              title="Edit log"
-              style={{
-                width:32, height:32, borderRadius:8,
-                border:`1.5px solid ${C.border}`,
-                background:C.white, cursor:"pointer",
-                display:"flex", alignItems:"center", justifyContent:"center",
-                fontSize:14, color:C.textMid,
-                transition:"all 0.15s",
-              }}
+            <button onClick={()=>onEdit(log)} title="Edit log"
+              style={{width:32,height:32,borderRadius:8,border:`1.5px solid ${C.border}`,background:C.white,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,color:C.textMid,transition:"all 0.15s"}}
               onMouseEnter={e=>{e.currentTarget.style.borderColor=C.primary;e.currentTarget.style.color=C.primary;e.currentTarget.style.background=C.bgLight;}}
-              onMouseLeave={e=>{e.currentTarget.style.borderColor=C.border;e.currentTarget.style.color=C.textMid;e.currentTarget.style.background=C.white;}}
-            >
-              ✎
-            </button>
-            <button
-              onClick={() => onDelete(log)}
-              title="Delete log"
-              style={{
-                width:32, height:32, borderRadius:8,
-                border:"1.5px solid #FECACA",
-                background:C.white, cursor:"pointer",
-                display:"flex", alignItems:"center", justifyContent:"center",
-                fontSize:13, color:"#EF4444",
-                transition:"all 0.15s",
-              }}
+              onMouseLeave={e=>{e.currentTarget.style.borderColor=C.border;e.currentTarget.style.color=C.textMid;e.currentTarget.style.background=C.white;}}>✎</button>
+            <button onClick={()=>onDelete(log)} title="Delete log"
+              style={{width:32,height:32,borderRadius:8,border:"1.5px solid #FECACA",background:C.white,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,color:"#EF4444",transition:"all 0.15s"}}
               onMouseEnter={e=>{e.currentTarget.style.background="#FEE2E2";e.currentTarget.style.borderColor="#F87171";}}
-              onMouseLeave={e=>{e.currentTarget.style.background=C.white;e.currentTarget.style.borderColor="#FECACA";}}
-            >
-              🗑
-            </button>
+              onMouseLeave={e=>{e.currentTarget.style.background=C.white;e.currentTarget.style.borderColor="#FECACA";}}>🗑</button>
           </div>
         </div>
       ))}
@@ -524,12 +462,10 @@ export default function CycleTrackerPage() {
   const [feedback,    setFeedback]    = useState({type:"",msg:""});
   const [showHistory, setShowHistory] = useState(true);
 
-  // Edit / delete modal state
-  const [editingLog,   setEditingLog]   = useState(null); // log being edited
-  const [deletingLog,  setDeletingLog]  = useState(null); // log being deleted
+  const [editingLog,   setEditingLog]   = useState(null);
+  const [deletingLog,  setDeletingLog]  = useState(null);
   const [histFeedback, setHistFeedback] = useState({type:"",msg:""});
 
-  // API state
   const [prediction, setPrediction] = useState(null);
   const [calendar,   setCalendar]   = useState(null);
   const [alerts,     setAlerts]     = useState([]);
@@ -548,15 +484,9 @@ export default function CycleTrackerPage() {
     if(logs.status==="fulfilled")  setPeriodLogs(logs.value  || []);
   };
 
-  useEffect(()=>{
-    refreshAll().finally(()=>setLoading(false));
-  },[]);
+  useEffect(()=>{ refreshAll().finally(()=>setLoading(false)); },[]);
 
-  const todayISO = useMemo(()=>{
-    const t = new Date();
-    return toISO(t.getFullYear(), t.getMonth(), t.getDate());
-  },[]);
-
+  const todayISO = useMemo(()=>{ const t=new Date(); return toISO(t.getFullYear(),t.getMonth(),t.getDate()); },[]);
   const { map: pastPeriodMap, set: pastPeriodDates } = useMemo(()=>buildPastPeriodMap(periodLogs),[periodLogs]);
   const isTodayPeriod = pastPeriodDates.has(todayISO);
   const currentPhase  = isTodayPeriod ? "Menstrual" : (calendar?.currentPhase ?? null);
@@ -566,7 +496,6 @@ export default function CycleTrackerPage() {
   const upd      = (k,v) => setLog(l=>({...l,[k]:v}));
   const toggleSx = s => upd("symptoms", log.symptoms.includes(s)?log.symptoms.filter(x=>x!==s):[...log.symptoms,s]);
 
-  // ── Save new log ──
   const save = async () => {
     if (!log.startDate) { setFeedback({type:"error",msg:"Please select your period start date on the calendar."}); return; }
     setSubmitting(true); setFeedback({type:"",msg:""});
@@ -586,7 +515,6 @@ export default function CycleTrackerPage() {
     } finally { setSubmitting(false); }
   };
 
-  // ── Handle edit save ──
   const handleEditSave = async (id, data) => {
     await editPeriodLog(id, data);
     await refreshAll();
@@ -594,7 +522,6 @@ export default function CycleTrackerPage() {
     setTimeout(()=>setHistFeedback({type:"",msg:""}), 3000);
   };
 
-  // ── Handle delete confirm ──
   const handleDeleteConfirm = async (id) => {
     try {
       await deletePeriodLog(id);
@@ -607,32 +534,19 @@ export default function CycleTrackerPage() {
   };
 
   const card = {
-    background: C.white, borderRadius: 20,
-    padding: isMobile ? "16px" : "28px",
-    border: `1px solid ${C.border}`,
-    boxShadow: "0 2px 16px rgba(96,51,119,0.07)",
-    boxSizing: "border-box",
+    background:C.white, borderRadius:20,
+    padding:isMobile?"16px":"28px",
+    border:`1px solid ${C.border}`,
+    boxShadow:"0 2px 16px rgba(96,51,119,0.07)",
+    boxSizing:"border-box",
   };
 
   const isNewUser = !loading && !prediction && !calendar && periodLogs.length === 0;
 
   return (
     <AppShell current="tracker">
-      {/* Modals */}
-      {editingLog && (
-        <EditLogModal
-          log={editingLog}
-          onClose={()=>setEditingLog(null)}
-          onSave={handleEditSave}
-        />
-      )}
-      {deletingLog && (
-        <DeleteConfirmModal
-          log={deletingLog}
-          onClose={()=>setDeletingLog(null)}
-          onConfirm={handleDeleteConfirm}
-        />
-      )}
+      {editingLog && <EditLogModal log={editingLog} onClose={()=>setEditingLog(null)} onSave={handleEditSave}/>}
+      {deletingLog && <DeleteConfirmModal log={deletingLog} onClose={()=>setDeletingLog(null)} onConfirm={handleDeleteConfirm}/>}
 
       <div style={{padding:isMobile?"14px 12px":"32px 36px",maxWidth:1060,width:"100%",boxSizing:"border-box",overflowX:"hidden"}}>
 
@@ -678,11 +592,11 @@ export default function CycleTrackerPage() {
                 <button key={t} onClick={()=>setTab(t)} style={{
                   flex:isMobile?1:"none",
                   padding:isMobile?"9px 4px":"10px 22px",
-                  borderRadius:10,border:"none",
+                  borderRadius:10, border:"none",
                   background:tab===t?C.white:"transparent",
                   color:tab===t?C.textDark:C.textSoft,
-                  fontFamily:"'Nunito', sans-serif",fontSize:isMobile?11:13,fontWeight:700,
-                  cursor:"pointer",transition:"all 0.2s",
+                  fontFamily:"'Nunito', sans-serif", fontSize:isMobile?11:13, fontWeight:700,
+                  cursor:"pointer", transition:"all 0.2s",
                   boxShadow:tab===t?"0 2px 10px rgba(96,51,119,0.12)":"none",
                   whiteSpace:"nowrap",
                 }}>{l}</button>
@@ -713,17 +627,12 @@ export default function CycleTrackerPage() {
                         )}
                       </div>
                     </div>
-
                     <PeriodCalendar
                       startDate={log.startDate} endDate={log.endDate}
                       onStartDate={v=>upd("startDate",v)} onEndDate={v=>upd("endDate",v)}
-                      pastPeriodMap={pastPeriodMap}
-                      pastPeriodDates={pastPeriodDates}
-                      prediction={prediction}
-                      showHistory={showHistory}
-                      onEditDay={setEditingLog}
+                      pastPeriodMap={pastPeriodMap} pastPeriodDates={pastPeriodDates}
+                      prediction={prediction} showHistory={showHistory} onEditDay={setEditingLog}
                     />
-
                     <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginTop:14}}>
                       <div style={{background:log.startDate?C.bgLight:"#F9F9F9",borderRadius:12,padding:"12px 14px",border:`1.5px solid ${log.startDate?C.primary:C.border}`,transition:"all 0.2s"}}>
                         <p style={{fontFamily:"'Nunito', sans-serif",fontSize:10,fontWeight:800,color:C.textSoft,textTransform:"uppercase",letterSpacing:"0.8px",marginBottom:4}}>Period Start</p>
@@ -790,7 +699,9 @@ export default function CycleTrackerPage() {
                   {/* Notes */}
                   <div style={card}>
                     <h2 style={{fontFamily:"'Cormorant Garamond', serif",fontSize:isMobile?18:22,fontWeight:700,color:C.textDark,marginBottom:12}}>Notes</h2>
-                    <textarea value={log.notes} onChange={e=>upd("notes",e.target.value)} placeholder="Anything else to remember about today..." rows={3} style={{width:"100%",border:`2px solid ${C.border}`,borderRadius:12,padding:"12px",fontFamily:"'Nunito', sans-serif",fontSize:14,color:C.textDark,resize:"none",outline:"none",transition:"border-color 0.2s",boxSizing:"border-box",background:C.sand}} onFocus={e=>e.target.style.borderColor=C.primary} onBlur={e=>e.target.style.borderColor=C.border}/>
+                    <textarea value={log.notes} onChange={e=>upd("notes",e.target.value)} placeholder="Anything else to remember about today..." rows={3}
+                      style={{width:"100%",border:`2px solid ${C.border}`,borderRadius:12,padding:"12px",fontFamily:"'Nunito', sans-serif",fontSize:14,color:C.textDark,resize:"none",outline:"none",transition:"border-color 0.2s",boxSizing:"border-box",background:C.sand}}
+                      onFocus={e=>e.target.style.borderColor=C.primary} onBlur={e=>e.target.style.borderColor=C.border}/>
                   </div>
 
                   {isMobile && (
@@ -889,39 +800,25 @@ export default function CycleTrackerPage() {
                 <NewUserWelcome onStartLogging={()=>setTab("log")}/>
               ) : (
                 <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:16,alignItems:"start"}}>
-                  {/* Calendar */}
                   <div style={card}>
                     <h2 style={{fontFamily:"'Cormorant Garamond', serif",fontSize:isMobile?18:22,fontWeight:700,color:C.textDark,marginBottom:4}}>Period Calendar</h2>
                     <p style={{fontFamily:"'Nunito', sans-serif",fontSize:12,color:C.textSoft,marginBottom:16}}>Hover over a period start date to edit it</p>
                     <PeriodCalendar
                       startDate={null} endDate={null}
                       onStartDate={()=>{}} onEndDate={()=>{}}
-                      pastPeriodMap={pastPeriodMap}
-                      pastPeriodDates={pastPeriodDates}
-                      prediction={prediction}
-                      showHistory={true}
-                      onEditDay={setEditingLog}
+                      pastPeriodMap={pastPeriodMap} pastPeriodDates={pastPeriodDates}
+                      prediction={prediction} showHistory={true} onEditDay={setEditingLog}
                     />
                   </div>
-
-                  {/* List */}
                   <div style={card}>
                     <div style={{display:"flex",alignItems:"baseline",justifyContent:"space-between",marginBottom:16}}>
                       <div>
                         <h2 style={{fontFamily:"'Cormorant Garamond', serif",fontSize:isMobile?18:22,fontWeight:700,color:C.textDark,marginBottom:4}}>Past Periods</h2>
-                        <p style={{fontFamily:"'Nunito', sans-serif",fontSize:12,color:C.textSoft}}>
-                          {periodLogs.length} log{periodLogs.length!==1?"s":""} recorded
-                        </p>
+                        <p style={{fontFamily:"'Nunito', sans-serif",fontSize:12,color:C.textSoft}}>{periodLogs.length} log{periodLogs.length!==1?"s":""} recorded</p>
                       </div>
                     </div>
-
                     <Banner type={histFeedback.type} message={histFeedback.msg} onClose={()=>setHistFeedback({type:"",msg:""})}/>
-
-                    <PastPeriodsList
-                      logs={periodLogs}
-                      onEdit={setEditingLog}
-                      onDelete={setDeletingLog}
-                    />
+                    <PastPeriodsList logs={periodLogs} onEdit={setEditingLog} onDelete={setDeletingLog}/>
                   </div>
                 </div>
               )

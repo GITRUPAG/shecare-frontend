@@ -66,6 +66,234 @@ const FEED_TABS = [
   { id: "bookmarks", label: "Bookmarks",      icon: "🔖" },
 ];
 
+// ─── Share options ─────────────────────────────────────────────────────────────
+const SHARE_OPTIONS = [
+  {
+    id: "whatsapp",
+    label: "WhatsApp",
+    color: "#25D366",
+    bg: "#F0FDF4",
+    border: "#BBF7D0",
+    getUrl: (text, url) =>
+      `https://wa.me/?text=${encodeURIComponent(text + "\n" + url)}`,
+    icon: (
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="#25D366">
+        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
+      </svg>
+    ),
+  },
+  {
+    id: "telegram",
+    label: "Telegram",
+    color: "#229ED9",
+    bg: "#EFF9FF",
+    border: "#BAE6FD",
+    getUrl: (text, url) =>
+      `https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`,
+    icon: (
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="#229ED9">
+        <path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z" />
+      </svg>
+    ),
+  },
+  {
+    id: "twitter",
+    label: "X / Twitter",
+    color: "#000000",
+    bg: "#F9FAFB",
+    border: "#E5E7EB",
+    getUrl: (text, url) =>
+      `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`,
+    icon: (
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="#000">
+        <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.742l7.74-8.855L1.254 2.25H8.08l4.259 5.629L18.244 2.25zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+      </svg>
+    ),
+  },
+  {
+    id: "facebook",
+    label: "Facebook",
+    color: "#1877F2",
+    bg: "#EFF6FF",
+    border: "#BFDBFE",
+    getUrl: (text, url) =>
+      `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}&quote=${encodeURIComponent(text)}`,
+    icon: (
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="#1877F2">
+        <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
+      </svg>
+    ),
+  },
+];
+
+// ─── Share Sheet ──────────────────────────────────────────────────────────────
+function ShareSheet({ post, onClose }) {
+  const isMobile = useIsMobile();
+  const [copied, setCopied] = useState(false);
+  const [nativeTried, setNativeTried] = useState(false);
+
+  // Build share content
+  const postUrl  = `${window.location.origin}/community/post/${post.id}`;
+  const shareText = post.title
+    ? `"${post.title}" — shared from SheCare Community 🌸`
+    : "Check out this post on SheCare Community 🌸";
+
+  // On mobile, attempt native share API first
+  useEffect(() => {
+    if (isMobile && navigator.share && !nativeTried) {
+      setNativeTried(true);
+      navigator
+        .share({ title: post.title || "SheCare Post", text: shareText, url: postUrl })
+        .then(onClose)
+        .catch(() => {}); // user cancelled → fall through to sheet
+    }
+  }, []); // eslint-disable-line
+
+  const handleOption = async (opt) => {
+    if (opt.id === "copy") {
+      try {
+        await navigator.clipboard.writeText(postUrl);
+      } catch {
+        // fallback for older browsers
+        const ta = document.createElement("textarea");
+        ta.value = postUrl;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand("copy");
+        document.body.removeChild(ta);
+      }
+      setCopied(true);
+      setTimeout(() => { setCopied(false); onClose(); }, 1400);
+      return;
+    }
+    window.open(opt.getUrl(shareText, postUrl), "_blank", "noopener,noreferrer,width=620,height=520");
+    onClose();
+  };
+
+  const handleCopyInline = async () => {
+    try { await navigator.clipboard.writeText(postUrl); }
+    catch {
+      const ta = document.createElement("textarea");
+      ta.value = postUrl; document.body.appendChild(ta);
+      ta.select(); document.execCommand("copy");
+      document.body.removeChild(ta);
+    }
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1800);
+  };
+
+  return (
+    <div
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+      style={{
+        position: "fixed", inset: 0, zIndex: 900,
+        background: "rgba(44,16,40,0.52)",
+        backdropFilter: "blur(5px)",
+        display: "flex",
+        alignItems: isMobile ? "flex-end" : "center",
+        justifyContent: "center",
+        padding: isMobile ? 0 : 20,
+      }}
+    >
+      <div style={{
+        background: C.white,
+        borderRadius: isMobile ? "24px 24px 0 0" : 24,
+        padding: isMobile ? "20px 18px 36px" : "28px 28px",
+        width: "100%",
+        maxWidth: isMobile ? "100%" : 420,
+        boxShadow: "0 24px 80px rgba(44,16,40,0.28)",
+        animation: "shareSlideUp 0.22s cubic-bezier(0.34,1.4,0.64,1)",
+      }}>
+
+        {/* Drag handle on mobile */}
+        {isMobile && (
+          <div style={{ width: 36, height: 4, borderRadius: 2, background: C.border, margin: "0 auto 18px" }} />
+        )}
+
+        {/* Header */}
+        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 16 }}>
+          <div style={{ flex: 1, minWidth: 0, paddingRight: 12 }}>
+            <h3 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 21, fontWeight: 700, color: C.textDark, marginBottom: 3 }}>
+              Share this post
+            </h3>
+            {post.title && (
+              <p style={{ fontFamily: "'Nunito', sans-serif", fontSize: 12, color: C.textSoft, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                "{post.title}"
+              </p>
+            )}
+          </div>
+          <button onClick={onClose} style={{ flexShrink: 0, background: C.bgLight, border: "none", borderRadius: "50%", width: 30, height: 30, cursor: "pointer", color: C.textSoft, fontSize: 15, display: "flex", alignItems: "center", justifyContent: "center" }}>
+            ✕
+          </button>
+        </div>
+
+        {/* Link preview + copy */}
+        <div style={{
+          background: C.sand, border: `1.5px solid ${C.border}`, borderRadius: 12,
+          padding: "10px 12px", marginBottom: 18,
+          display: "flex", alignItems: "center", gap: 10,
+        }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <p style={{ fontFamily: "'Nunito', sans-serif", fontSize: 10, color: C.textSoft, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.6px", marginBottom: 2 }}>Post link</p>
+            <p style={{ fontFamily: "'Nunito', sans-serif", fontSize: 12, color: C.textMid, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              {postUrl}
+            </p>
+          </div>
+          <button
+            onClick={handleCopyInline}
+            style={{
+              flexShrink: 0,
+              background: copied ? "#F0FDF4" : C.bgLight,
+              border: `1.5px solid ${copied ? "#BBF7D0" : C.border}`,
+              borderRadius: 8, padding: "6px 13px",
+              fontFamily: "'Nunito', sans-serif", fontSize: 11, fontWeight: 800,
+              color: copied ? "#16A34A" : C.primaryDark,
+              cursor: "pointer", transition: "all 0.2s",
+            }}
+          >
+            {copied ? "✓ Copied!" : "Copy"}
+          </button>
+        </div>
+
+        {/* Social options grid */}
+        <p style={{ fontFamily: "'Nunito', sans-serif", fontSize: 11, fontWeight: 800, color: C.textSoft, textTransform: "uppercase", letterSpacing: "0.8px", marginBottom: 10 }}>
+          Share to
+        </p>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+          {SHARE_OPTIONS.map((opt) => (
+            <button
+              key={opt.id}
+              onClick={() => handleOption(opt)}
+              style={{
+                display: "flex", alignItems: "center", gap: 10,
+                background: opt.bg,
+                border: `1.5px solid ${opt.border}`,
+                borderRadius: 14, padding: "12px 14px",
+                cursor: "pointer", transition: "all 0.17s",
+                fontFamily: "'Nunito', sans-serif",
+                textAlign: "left",
+              }}
+              onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 5px 16px rgba(0,0,0,0.09)"; }}
+              onMouseLeave={e => { e.currentTarget.style.transform = "none"; e.currentTarget.style.boxShadow = "none"; }}
+            >
+              <span style={{ flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>{opt.icon}</span>
+              <span style={{ fontSize: 13, fontWeight: 700, color: opt.color }}>{opt.label}</span>
+            </button>
+          ))}
+        </div>
+
+        {/* Animation */}
+        <style>{`
+          @keyframes shareSlideUp {
+            from { transform: translateY(50px); opacity: 0; }
+            to   { transform: translateY(0);    opacity: 1; }
+          }
+        `}</style>
+      </div>
+    </div>
+  );
+}
+
 // ─── Responsive hook ──────────────────────────────────────────────────────────
 function useIsMobile() {
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
@@ -532,6 +760,7 @@ function EditModal({ post, onClose, onSaved, username }) {
 function PostCard({ post, onLikeToggle, onSaveToggle, onRepostToggle, onReportSuccess, onDeleted, onEdited, currentUsername, isOwn, isRepost }) {
   const [expanded,     setExpanded]     = useState(false);
   const [showComments, setShowComments] = useState(false);
+  const [showShare,    setShowShare]    = useState(false); // ← NEW
   const [liking,       setLiking]       = useState(false);
   const [saving,       setSaving]       = useState(false);
   const [reposting,    setReposting]    = useState(false);
@@ -604,6 +833,12 @@ function PostCard({ post, onLikeToggle, onSaveToggle, onRepostToggle, onReportSu
       {lightboxIdx !== null && (
         <MediaLightbox items={mediaItems} startIndex={lightboxIdx} onClose={() => setLightboxIdx(null)} />
       )}
+
+      {/* ── Share Sheet (renders when showShare is true) ── */}
+      {showShare && (
+        <ShareSheet post={post} onClose={() => setShowShare(false)} />
+      )}
+
       <div style={{
         background: C.white, borderRadius: 22,
         border: `1px solid ${isOwn ? C.primary + "44" : C.border}`,
@@ -698,13 +933,34 @@ function PostCard({ post, onLikeToggle, onSaveToggle, onRepostToggle, onReportSu
             </div>
           )}
 
+          {/* ── Action bar ── */}
           <div style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 14, paddingTop: 14, borderTop: `1px solid ${C.bgLight}`, flexWrap: "wrap" }}>
             <ActionBtn icon="❤️" label={likeCount}    onClick={handleLike}   disabled={liking}    active={post.liked} />
             <ActionBtn icon="💬" label={commentCount} onClick={() => setShowComments(v => !v)} active={showComments} />
             <ActionBtn icon="🔁" label={repostCount}  onClick={handleRepost} disabled={reposting} active={post.reposted} activeColor="#16A34A" />
             <ActionBtn icon={post.saved ? "🔖" : "📌"} label={post.saved ? "Saved" : "Save"} onClick={handleSave} disabled={saving} active={post.saved} />
-            <button style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 5, background: "none", border: "none", cursor: "pointer", fontFamily: "'Nunito', sans-serif", fontSize: 13, fontWeight: 700, color: C.textSoft, padding: "6px 10px", borderRadius: 8 }}>
-              ↗ Share
+
+            {/* ── Share Button (replaces the old placeholder) ── */}
+            <button
+              onClick={() => setShowShare(true)}
+              style={{
+                marginLeft: "auto",
+                display: "flex", alignItems: "center", gap: 5,
+                background: "none", border: "none", cursor: "pointer",
+                fontFamily: "'Nunito', sans-serif", fontSize: 13, fontWeight: 700,
+                color: C.textSoft, padding: "6px 10px", borderRadius: 8,
+                transition: "all 0.15s",
+              }}
+              onMouseEnter={e => { e.currentTarget.style.background = C.bgLight; e.currentTarget.style.color = C.primary; }}
+              onMouseLeave={e => { e.currentTarget.style.background = "none";    e.currentTarget.style.color = C.textSoft; }}
+            >
+              {/* Upload / share arrow icon */}
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/>
+                <polyline points="16 6 12 2 8 6"/>
+                <line x1="12" y1="2" x2="12" y2="15"/>
+              </svg>
+              Share
             </button>
           </div>
 
@@ -908,7 +1164,6 @@ export default function CommunityPage() {
   const [myError,   setMyError]   = useState("");
   const [myLoaded,  setMyLoaded]  = useState(false);
 
-  // ── Reposts ───────────────────────────────────────────────────────────────
   const [reposts,   setReposts]   = useState([]);
   const [rpLoading, setRpLoading] = useState(false);
   const [rpError,   setRpError]   = useState("");
@@ -955,9 +1210,6 @@ export default function CommunityPage() {
     finally { setMyLoading(false); }
   }, []);
 
-  // Reposts are tracked locally. On tab open, scan the feed for posts the
-  // backend already marks as reposted (repostedByMe flag). After that,
-  // handleRepostToggle keeps the list in sync in real time.
   const loadReposts = useCallback(async () => {
     setRpLoading(true); setRpError("");
     try {
@@ -1011,9 +1263,8 @@ export default function CommunityPage() {
     setPosts(prev     => prev.map(p => p.id === postId ? { ...p, saved: !p.saved } : p));
     setMyPosts(prev   => prev.map(p => p.id === postId ? { ...p, saved: !p.saved } : p));
     setReposts(prev   => prev.map(p => p.id === postId ? { ...p, saved: !p.saved } : p));
-    // Remove from bookmarks list when unsaved
     setBookmarks(prev => prev.filter(p => p.id !== postId));
-    setBmLoaded(false); // refresh next time bookmarks tab is opened
+    setBmLoaded(false);
   };
 
   const handleRepostToggle = postId => {
@@ -1021,7 +1272,6 @@ export default function CommunityPage() {
     toggleInList(setMyPosts,   postId, "reposted", "repostCount");
     toggleInList(setBookmarks, postId, "reposted", "repostCount");
 
-    // Keep reposts list in sync in real time
     const alreadyInReposts = reposts.some(p => p.id === postId);
     if (alreadyInReposts) {
       setReposts(prev => prev.filter(p => p.id !== postId));
@@ -1064,7 +1314,6 @@ export default function CommunityPage() {
     (p.body ?? p.content ?? "").toLowerCase().includes(search.toLowerCase())
   );
 
-  // Posts by the current user in the community feed get Edit/Delete controls
   const isOwnPost = (post) =>
     !post.anonymous && post.username && post.username === username;
 
@@ -1072,7 +1321,6 @@ export default function CommunityPage() {
     <AppShell current="community">
       <div style={{ padding: isMobile ? "16px 12px" : "32px 36px", maxWidth: 1100, width: "100%", boxSizing: "border-box", overflowX: "hidden" }}>
 
-        {/* Toast */}
         {toast && (
           <div style={{ position: "fixed", bottom: 28, left: "50%", transform: "translateX(-50%)", background: C.secondary, color: C.white, borderRadius: 14, padding: "12px 24px", fontFamily: "'Nunito', sans-serif", fontSize: 14, fontWeight: 700, zIndex: 999, boxShadow: "0 8px 24px rgba(0,0,0,0.15)", whiteSpace: "nowrap" }}>
             {toast}
@@ -1144,7 +1392,6 @@ export default function CommunityPage() {
           ))}
         </div>
 
-        {/* ── Mobile: category scroller + search ── */}
         {isMobile && feedTab === "community" && (
           <div style={{ marginBottom: 14, display: "flex", flexDirection: "column", gap: 10, width: "100%", boxSizing: "border-box" }}>
             <div style={{ position: "relative" }}>
@@ -1158,10 +1405,8 @@ export default function CommunityPage() {
           </div>
         )}
 
-        {/* ── Desktop: sidebar + feed grid ── */}
         {!isMobile ? (
           <div style={{ display: "grid", gridTemplateColumns: "220px 1fr", gap: 24 }}>
-            {/* Sidebar */}
             <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
               {feedTab === "community" && (
                 <>
@@ -1199,7 +1444,6 @@ export default function CommunityPage() {
               </div>
             </div>
 
-            {/* Feed */}
             <FeedContent
               feedTab={feedTab} visible={visible} loading={loading} hasMore={hasMore}
               page={page} setPage={setPage} loadFeed={loadFeed} cat={cat}
@@ -1245,7 +1489,6 @@ function FeedContent({
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16, width: "100%", minWidth: 0 }}>
 
-      {/* ── Community Feed ── */}
       {feedTab === "community" && (
         <>
           <p style={{ fontFamily: "'Nunito', sans-serif", fontSize: 13, color: C.textSoft }}>
@@ -1285,7 +1528,6 @@ function FeedContent({
         </>
       )}
 
-      {/* ── My Posts ── */}
       {feedTab === "my-posts" && (
         <>
           {myError && <Banner type="error" message={myError} onClose={() => setMyError("")} />}
@@ -1313,7 +1555,6 @@ function FeedContent({
         </>
       )}
 
-      {/* ── Reposts ── */}
       {feedTab === "reposts" && (
         <>
           {rpError && <Banner type="error" message={rpError} onClose={() => setRpError("")} />}
@@ -1341,7 +1582,6 @@ function FeedContent({
         </>
       )}
 
-      {/* ── Bookmarks ── */}
       {feedTab === "bookmarks" && (
         <>
           {bmError && <Banner type="error" message={bmError} onClose={() => setBmError("")} />}

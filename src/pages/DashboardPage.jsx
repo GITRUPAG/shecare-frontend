@@ -30,6 +30,27 @@ function LoadingCard({ height = 80 }) {
   );
 }
 
+// Map of emoji → human-readable label
+const ICON_MEANINGS = {
+  "💡": "Tip",
+  "🌿": "Wellness",
+  "📊": "Trend",
+  "🌸": "Cycle",
+  "⚠️": "Alert",
+  "💊": "Nutrition",
+  "🧘": "Mindfulness",
+  "🏃": "Activity",
+  "😴": "Sleep",
+  "💧": "Hydration",
+  "🔥": "Energy",
+  "❤️": "Health",
+  "🩺": "Medical",
+  "🥗": "Diet",
+  "🧠": "Mental Health",
+  "🌙": "Night",
+  "☀️": "Morning",
+};
+
 export default function DashboardPage() {
   const navigate = useNavigate();
   const today = new Date();
@@ -46,7 +67,6 @@ export default function DashboardPage() {
   const user = raw ? JSON.parse(raw) : {};
   const displayName = user?.name || user?.username || "there";
 
-  // ✅ Time-based greeting
   const getGreeting = () => {
     const hour = new Date().getHours();
     if (hour < 12) return "Good morning ☀️";
@@ -172,6 +192,18 @@ export default function DashboardPage() {
         .db-main  { display:grid; grid-template-columns:1.5fr 1fr; gap:20px; }
         .db-right { display:flex; flex-direction:column; gap:16px; }
 
+        .insight-icon-badge {
+          font-family:'Nunito',sans-serif;
+          font-size:10px;
+          font-weight:800;
+          border-radius:6px;
+          padding:2px 7px;
+          letter-spacing:0.5px;
+          text-transform:uppercase;
+          line-height:1.6;
+          white-space:nowrap;
+        }
+
         @media (max-width: 767px) {
           .db-root  { padding: 16px 16px 80px; }
           .db-header h1 { font-size:22px; }
@@ -199,7 +231,6 @@ export default function DashboardPage() {
         {/* Header */}
         <div className="db-header">
           <div>
-            {/* ✅ Dynamic time-based greeting */}
             <p>{getGreeting()}</p>
             <h1>Welcome back, {displayName}</h1>
           </div>
@@ -344,9 +375,25 @@ export default function DashboardPage() {
                   <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
                     {displayInsights.map((ins, i) => {
                       const s = insightBg[ins.type] || insightBg.tip;
+                      // Look up what the icon means, fallback to "Insight"
+                      const iconLabel = ICON_MEANINGS[ins.icon] || "Insight";
                       return (
                         <div key={i} style={{ background:s.bg, border:`1px solid ${s.border}`, borderRadius:12, padding:"12px 14px" }}>
-                          <p style={{ fontFamily:"'Nunito',sans-serif", fontSize:13, fontWeight:700, color:C.textDark, margin:"0 0 4px" }}>{ins.icon} {ins.title}</p>
+                          {/* Icon row: emoji + label badge + title */}
+                          <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:5, flexWrap:"wrap" }}>
+                            <span style={{ fontSize:18, lineHeight:1 }}>{ins.icon}</span>
+                            <span
+                              className="insight-icon-badge"
+                              style={{
+                                background:"white",
+                                color: s.c,
+                                border:`1px solid ${s.border}`,
+                              }}
+                            >
+                              {iconLabel}
+                            </span>
+                            <p style={{ fontFamily:"'Nunito',sans-serif", fontSize:13, fontWeight:700, color:C.textDark, margin:0 }}>{ins.title}</p>
+                          </div>
                           <p style={{ fontFamily:"'Nunito',sans-serif", fontSize:12, color:C.textSoft, lineHeight:1.6, margin:0 }}>{ins.body}</p>
                         </div>
                       );
