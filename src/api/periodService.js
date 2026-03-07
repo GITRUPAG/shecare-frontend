@@ -58,3 +58,6 @@ export const getPeriodPrediction = async () => {
   const res = await API.get("/period/prediction", { headers: authHeader() });
   return res.data;
 };
+
+export const editPeriodLog    = (id, data)   => API.put(`/period/log/${id}`, data).then(r => r.data);
+export const deletePeriodLog  = (id)         => API.delete(`/period/log/${id}`).then(r => r.data);

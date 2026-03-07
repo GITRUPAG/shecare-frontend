@@ -2,6 +2,8 @@ import { useState, useEffect, useMemo } from "react";
 import { AppShell } from "../components/Layout";
 import {
   logPeriod,
+  editPeriodLog,
+  deletePeriodLog,
   getPrediction,
   getPhaseInsights,
   getAlerts,
@@ -40,7 +42,6 @@ const fmt      = d => !d ? "—" : new Date(d + "T00:00:00").toLocaleDateString(
 const fmtRange = (a,b) => (!a||!b) ? "—" : `${fmt(a)} – ${fmt(b)}`;
 const toISO    = (y,m,d) => `${y}-${String(m+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
 
-// ─── Responsive hook ──────────────────────────────────────────────────────────
 function useIsMobile() {
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   useEffect(() => {
@@ -51,24 +52,27 @@ function useIsMobile() {
   return isMobile;
 }
 
-// ─── Build a Set of all ISO dates that fall within any past period range ──────
-function buildPastPeriodDates(logs) {
-  const set = new Set();
-  if (!logs?.length) return set;
+// Build a map: ISO date → log object (for edit icon lookup)
+function buildPastPeriodMap(logs) {
+  const map = new Map(); // ISO date → log
+  const set = new Set(); // ISO date → true (for coloring)
+  if (!logs?.length) return { map, set };
   for (const log of logs) {
     if (!log.startDate) continue;
     const start = new Date(log.startDate + "T00:00:00");
     const end   = new Date((log.endDate || log.startDate) + "T00:00:00");
     const cur   = new Date(start);
     while (cur <= end) {
-      set.add(cur.toISOString().slice(0, 10));
+      const iso = cur.toISOString().slice(0, 10);
+      set.add(iso);
+      // Map the startDate ISO to the log — so clicking any day in a range finds the log
+      if (!map.has(iso)) map.set(iso, log);
       cur.setDate(cur.getDate() + 1);
     }
   }
-  return set;
+  return { map, set };
 }
 
-// ─── Phase banner data ────────────────────────────────────────────────────────
 const PHASE_META = {
   Menstrual:   { color: C.primary,     bg: "#FFF0F6", border: "#F9C8DC", icon: "🩸", tip: "Rest, stay warm and hydrated. Iron-rich foods help replenish energy." },
   Follicular:  { color: C.follicular,  bg: "#EFF6FF", border: "#BFDBFE", icon: "🌱", tip: "Energy is rising. Great time for new habits, workouts and social plans." },
@@ -77,11 +81,116 @@ const PHASE_META = {
   Luteal:      { color: C.luteal,      bg: "#FAF5FF", border: "#DDD6FE", icon: "🌙", tip: "Progesterone rises. Wind down, prioritise sleep and magnesium-rich foods." },
 };
 
+// ─── Edit Modal ───────────────────────────────────────────────────────────────
+function EditLogModal({ log, onClose, onSave }) {
+  const [startDate, setStartDate] = useState(log.startDate || "");
+  const [endDate,   setEndDate]   = useState(log.endDate   || "");
+  const [saving,    setSaving]    = useState(false);
+  const [err,       setErr]       = useState("");
+
+  const handleSave = async () => {
+    if (!startDate) { setErr("Please enter a start date."); return; }
+    const end = endDate || startDate;
+    if (end < startDate) { setErr("End date cannot be before start date."); return; }
+    setSaving(true); setErr("");
+    try {
+      await onSave(log.id, { startDate, endDate: end });
+      onClose();
+    } catch(e) {
+      setErr(e?.response?.data?.message || "Failed to save changes.");
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div style={{position:"fixed",inset:0,background:"rgba(44,16,40,0.45)",zIndex:1000,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
+      <div style={{background:C.white,borderRadius:24,padding:"28px",width:"100%",maxWidth:400,boxShadow:"0 20px 60px rgba(44,16,40,0.25)"}}>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:20}}>
+          <h2 style={{fontFamily:"'Cormorant Garamond',serif",fontSize:22,fontWeight:700,color:C.textDark,margin:0}}>✏️ Edit Period Log</h2>
+          <button onClick={onClose} style={{background:"none",border:"none",cursor:"pointer",fontSize:20,color:C.textSoft,lineHeight:1}}>✕</button>
+        </div>
+
+        {err && (
+          <div style={{background:"#FFF0F4",border:"1.5px solid #F4B8CB",borderRadius:10,padding:"10px 14px",marginBottom:14,fontFamily:"'Nunito',sans-serif",fontSize:13,color:C.primaryDark,fontWeight:600}}>
+            ⚠️ {err}
+          </div>
+        )}
+
+        <div style={{display:"flex",flexDirection:"column",gap:16}}>
+          <div>
+            <label style={{fontFamily:"'Nunito',sans-serif",fontSize:12,fontWeight:800,color:C.textMid,textTransform:"uppercase",letterSpacing:"0.8px",display:"block",marginBottom:6}}>
+              Period Start
+            </label>
+            <input type="date" value={startDate} onChange={e=>setStartDate(e.target.value)}
+              max={new Date().toISOString().slice(0,10)}
+              style={{width:"100%",padding:"11px 14px",border:`2px solid ${C.border}`,borderRadius:12,fontFamily:"'Nunito',sans-serif",fontSize:14,color:C.textDark,outline:"none",boxSizing:"border-box",background:C.sand}}
+              onFocus={e=>e.target.style.borderColor=C.primary}
+              onBlur={e=>e.target.style.borderColor=C.border}
+            />
+          </div>
+          <div>
+            <label style={{fontFamily:"'Nunito',sans-serif",fontSize:12,fontWeight:800,color:C.textMid,textTransform:"uppercase",letterSpacing:"0.8px",display:"block",marginBottom:6}}>
+              Period End
+            </label>
+            <input type="date" value={endDate} onChange={e=>setEndDate(e.target.value)}
+              min={startDate} max={new Date().toISOString().slice(0,10)}
+              style={{width:"100%",padding:"11px 14px",border:`2px solid ${C.border}`,borderRadius:12,fontFamily:"'Nunito',sans-serif",fontSize:14,color:C.textDark,outline:"none",boxSizing:"border-box",background:C.sand}}
+              onFocus={e=>e.target.style.borderColor=C.primary}
+              onBlur={e=>e.target.style.borderColor=C.border}
+            />
+          </div>
+        </div>
+
+        <div style={{display:"flex",gap:10,marginTop:24}}>
+          <button onClick={onClose} style={{flex:1,padding:"12px",borderRadius:12,border:`2px solid ${C.border}`,background:"none",fontFamily:"'Nunito',sans-serif",fontSize:14,fontWeight:700,color:C.textSoft,cursor:"pointer"}}>
+            Cancel
+          </button>
+          <button onClick={handleSave} disabled={saving} style={{flex:2,padding:"12px",borderRadius:12,border:"none",background:saving?C.border:C.grad,color:"#fff",fontFamily:"'Nunito',sans-serif",fontSize:14,fontWeight:700,cursor:saving?"not-allowed":"pointer",boxShadow:`0 4px 16px ${C.primaryGlow}`}}>
+            {saving ? "Saving…" : "Save Changes"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Delete Confirm Modal ─────────────────────────────────────────────────────
+function DeleteConfirmModal({ log, onClose, onConfirm }) {
+  const [deleting, setDeleting] = useState(false);
+
+  const handleDelete = async () => {
+    setDeleting(true);
+    await onConfirm(log.id);
+    onClose();
+  };
+
+  return (
+    <div style={{position:"fixed",inset:0,background:"rgba(44,16,40,0.45)",zIndex:1000,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
+      <div style={{background:C.white,borderRadius:24,padding:"28px",width:"100%",maxWidth:380,boxShadow:"0 20px 60px rgba(44,16,40,0.25)",textAlign:"center"}}>
+        <div style={{fontSize:40,marginBottom:12}}>🗑️</div>
+        <h2 style={{fontFamily:"'Cormorant Garamond',serif",fontSize:22,fontWeight:700,color:C.textDark,marginBottom:8}}>Delete Period Log?</h2>
+        <p style={{fontFamily:"'Nunito',sans-serif",fontSize:13,color:C.textSoft,lineHeight:1.6,marginBottom:24}}>
+          This will permanently remove the log for <strong style={{color:C.textDark}}>{fmt(log.startDate)}{log.endDate && log.endDate !== log.startDate ? ` – ${fmt(log.endDate)}` : ""}</strong>. This action cannot be undone.
+        </p>
+        <div style={{display:"flex",gap:10}}>
+          <button onClick={onClose} style={{flex:1,padding:"12px",borderRadius:12,border:`2px solid ${C.border}`,background:"none",fontFamily:"'Nunito',sans-serif",fontSize:14,fontWeight:700,color:C.textSoft,cursor:"pointer"}}>
+            Cancel
+          </button>
+          <button onClick={handleDelete} disabled={deleting} style={{flex:2,padding:"12px",borderRadius:12,border:"none",background:deleting?"#ccc":"linear-gradient(135deg,#EF4444,#DC2626)",color:"#fff",fontFamily:"'Nunito',sans-serif",fontSize:14,fontWeight:700,cursor:deleting?"not-allowed":"pointer",boxShadow:"0 4px 16px rgba(239,68,68,0.30)"}}>
+            {deleting ? "Deleting…" : "Yes, Delete"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Period Calendar ──────────────────────────────────────────────────────────
-function PeriodCalendar({ startDate, endDate, onStartDate, onEndDate, pastPeriodDates, prediction, showHistory }) {
+function PeriodCalendar({ startDate, endDate, onStartDate, onEndDate, pastPeriodMap, pastPeriodDates, prediction, showHistory, onEditDay }) {
   const today = new Date();
   const [vy, setVy] = useState(today.getFullYear());
   const [vm, setVm] = useState(today.getMonth());
+  const [hoveredPast, setHoveredPast] = useState(null);
 
   const todayISO       = toISO(today.getFullYear(), today.getMonth(), today.getDate());
   const daysInMonth    = new Date(vy, vm+1, 0).getDate();
@@ -117,9 +226,9 @@ function PeriodCalendar({ startDate, endDate, onStartDate, onEndDate, pastPeriod
 
   const predState = iso => {
     if (!prediction) return null;
-    if (iso === prediction.ovulationDay)                                              return "ovulation";
-    if (iso >= prediction.fertileStart && iso <= prediction.fertileEnd)               return "fertile";
-    if (iso >= prediction.predictedStartDate && iso <= prediction.predictedEndDate)   return "nextPeriod";
+    if (iso === prediction.ovulationDay)                                            return "ovulation";
+    if (iso >= prediction.fertileStart && iso <= prediction.fertileEnd)             return "fertile";
+    if (iso >= prediction.predictedStartDate && iso <= prediction.predictedEndDate) return "nextPeriod";
     return null;
   };
 
@@ -148,15 +257,19 @@ function PeriodCalendar({ startDate, endDate, onStartDate, onEndDate, pastPeriod
       <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:"3px 0"}}>
         {cells.map((day,idx) => {
           if (!day) return <div key={`e${idx}`}/>;
-          const iso    = toISO(vy, vm, day);
-          const future = iso > todayISO;
-          const selSt  = newSelState(iso);
-          const pastP  = isPast(iso);
-          const pred   = predState(iso);
+          const iso     = toISO(vy, vm, day);
+          const future  = iso > todayISO;
+          const selSt   = newSelState(iso);
+          const pastP   = isPast(iso);
+          const pred    = predState(iso);
           const isToday = iso === todayISO;
+          const logForDay = pastPeriodMap.get(iso);
+          // Only show edit icon on the startDate of each log
+          const isLogStart = logForDay && logForDay.startDate === iso;
+          const isHovering = hoveredPast === iso;
 
-          const isSelRange  = selSt === "selRange";
-          const isSelEdge   = selSt === "selStart" || selSt === "selEnd" || selSt === "selSingle";
+          const isSelRange = selSt === "selRange";
+          const isSelEdge  = selSt === "selStart" || selSt === "selEnd" || selSt === "selSingle";
 
           const cellFill =
             isSelRange                          ? C.primaryGlow :
@@ -166,10 +279,10 @@ function PeriodCalendar({ startDate, endDate, onStartDate, onEndDate, pastPeriod
             "transparent";
 
           let btnBg = "transparent";
-          if (isSelEdge)                   btnBg = C.primary;
-          else if (pred === "ovulation")   btnBg = "rgba(217,119,6,0.22)";
-          else if (pred === "fertile")     btnBg = "rgba(22,163,74,0.20)";
-          else if (pastP)                  btnBg = "rgba(216,94,130,0.18)";
+          if (isSelEdge)                 btnBg = C.primary;
+          else if (pred === "ovulation") btnBg = "rgba(217,119,6,0.22)";
+          else if (pred === "fertile")   btnBg = "rgba(22,163,74,0.20)";
+          else if (pastP)                btnBg = "rgba(216,94,130,0.18)";
 
           let btnColor = future ? C.textSoft+"55" : C.textDark;
           if (isSelEdge)                             btnColor = "#fff";
@@ -182,15 +295,18 @@ function PeriodCalendar({ startDate, endDate, onStartDate, onEndDate, pastPeriod
           if (isToday && !isSelEdge) btnBorder = `2px solid ${C.primary}`;
 
           return (
-            <div key={iso} style={{
-              background: cellFill,
-              borderRadius: selSt==="selStart"?"50% 0 0 50%": selSt==="selEnd"?"0 50% 50% 0": isSelRange?"0":"0",
-              display:"flex", alignItems:"center", justifyContent:"center",
-              height:38,
-            }}>
+            <div key={iso}
+              style={{
+                background: cellFill,
+                borderRadius: selSt==="selStart"?"50% 0 0 50%": selSt==="selEnd"?"0 50% 50% 0": isSelRange?"0":"0",
+                display:"flex", alignItems:"center", justifyContent:"center",
+                height:42, position:"relative",
+              }}
+              onMouseEnter={()=>{ if(pastP) setHoveredPast(iso); }}
+              onMouseLeave={()=>setHoveredPast(null)}
+            >
               <button onClick={()=>handleClick(iso)} style={{
-                width:36, height:36,
-                borderRadius:"50%",
+                width:36, height:36, borderRadius:"50%",
                 border: btnBorder,
                 background: btnBg,
                 color: btnColor,
@@ -207,20 +323,42 @@ function PeriodCalendar({ startDate, endDate, onStartDate, onEndDate, pastPeriod
               >
                 {day}
               </button>
+
+              {/* ✅ Edit pencil icon — appears on hover over a past period start date */}
+              {isLogStart && isHovering && onEditDay && (
+                <button
+                  onClick={e=>{ e.stopPropagation(); onEditDay(logForDay); }}
+                  title="Edit this period log"
+                  style={{
+                    position:"absolute", top:1, right:1,
+                    width:16, height:16, borderRadius:"50%",
+                    background:C.primary, border:"none",
+                    cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center",
+                    fontSize:8, color:"#fff", boxShadow:"0 2px 6px rgba(0,0,0,0.2)",
+                    zIndex:10, lineHeight:1, padding:0,
+                  }}
+                >
+                  ✎
+                </button>
+              )}
             </div>
           );
         })}
       </div>
 
       <div style={{display:"flex",alignItems:"center",gap:12,marginTop:14,paddingTop:12,borderTop:`1px solid ${C.border}`,flexWrap:"wrap"}}>
-        <LegendDot color={C.primary}                  label="Start / End"  circle />
-        {showHistory && <LegendDot color="rgba(216,94,130,0.18)"  label="Past period" />}
-        <LegendDot color="transparent"                label="Today"        border={`2px solid ${C.primary}`} circle />
+        <LegendDot color={C.primary}                 label="Start / End" circle />
+        {showHistory && <LegendDot color="rgba(216,94,130,0.18)" label="Past period" />}
+        <LegendDot color="transparent"               label="Today"       border={`2px solid ${C.primary}`} circle />
         {prediction && <>
-          <LegendDot color="rgba(22,163,74,0.20)"   label="Fertile"    />
-          <LegendDot color="rgba(217,119,6,0.22)"   label="Ovulation"  />
+          <LegendDot color="rgba(22,163,74,0.20)"  label="Fertile"   />
+          <LegendDot color="rgba(217,119,6,0.22)"  label="Ovulation" />
         </>}
-        <span style={{marginLeft:"auto",fontFamily:"'Nunito', sans-serif",fontSize:11,color:C.textSoft,fontStyle:"italic"}}>Double-tap to remove</span>
+        {showHistory && onEditDay && (
+          <span style={{marginLeft:"auto",fontFamily:"'Nunito',sans-serif",fontSize:11,color:C.textSoft,fontStyle:"italic"}}>
+            Hover a 🩸 start to edit
+          </span>
+        )}
       </div>
     </div>
   );
@@ -237,45 +375,70 @@ function LegendDot({ color, label, border, circle }) {
   );
 }
 
-// ─── Past Periods List ────────────────────────────────────────────────────────
-function PastPeriodsList({ logs }) {
-  const deduped = useMemo(() => {
-    if (!logs?.length) return [];
-    const seen = new Map();
-    for (const log of logs) {
-      const key = log.startDate;
-      if (!seen.has(key)) {
-        seen.set(key, log);
-      } else {
-        const prev = seen.get(key);
-        const prevDur = prev.duration || 0;
-        const curDur  = log.duration  || 0;
-        if (curDur > prevDur) seen.set(key, log);
-      }
-    }
-    return Array.from(seen.values());
-  }, [logs]);
-
-  if (!deduped.length) return (
+// ─── Past Periods List with Edit + Delete ─────────────────────────────────────
+function PastPeriodsList({ logs, onEdit, onDelete }) {
+  if (!logs?.length) return (
     <div style={{textAlign:"center",padding:"32px 0"}}>
       <div style={{fontSize:36,marginBottom:10}}>📅</div>
-      <p style={{fontFamily:"'Nunito', sans-serif",fontSize:13,color:C.textSoft,fontStyle:"italic"}}>No past period logs yet. Start logging to see your history here.</p>
+      <p style={{fontFamily:"'Nunito', sans-serif",fontSize:13,color:C.textSoft,fontStyle:"italic"}}>No past period logs yet.</p>
     </div>
   );
+
   return (
     <div style={{display:"flex",flexDirection:"column",gap:0}}>
-      {deduped.map((log,i)=>(
-        <div key={log.id||i} style={{display:"flex",alignItems:"center",gap:16,padding:"14px 0",borderBottom:i<deduped.length-1?`1px solid ${C.bgLight}`:"none"}}>
+      {logs.map((log, i) => (
+        <div key={log.id || i} style={{
+          display:"flex", alignItems:"center", gap:12,
+          padding:"14px 0",
+          borderBottom: i < logs.length-1 ? `1px solid ${C.bgLight}` : "none",
+        }}>
           <div style={{width:10,height:10,borderRadius:"50%",background:C.primary,flexShrink:0}}/>
-          <div style={{flex:1,display:"flex",alignItems:"center",gap:10,flexWrap:"wrap"}}>
+
+          <div style={{flex:1, minWidth:0}}>
             <span style={{fontFamily:"'Cormorant Garamond', serif",fontSize:18,fontWeight:700,color:C.textDark}}>
-              {fmt(log.startDate)}{log.endDate&&log.endDate!==log.startDate?` – ${fmt(log.endDate)}`:""} 
+              {fmt(log.startDate)}{log.endDate && log.endDate !== log.startDate ? ` – ${fmt(log.endDate)}` : ""}
             </span>
             {log.duration && (
-              <span style={{fontFamily:"'Nunito', sans-serif",fontSize:11,fontWeight:700,padding:"2px 10px",borderRadius:20,background:C.bgLight,color:C.primaryDark}}>
+              <span style={{fontFamily:"'Nunito', sans-serif",fontSize:11,fontWeight:700,padding:"2px 10px",borderRadius:20,background:C.bgLight,color:C.primaryDark,marginLeft:8}}>
                 {log.duration}d
               </span>
             )}
+          </div>
+
+          {/* ✅ Edit & Delete buttons */}
+          <div style={{display:"flex",gap:6,flexShrink:0}}>
+            <button
+              onClick={() => onEdit(log)}
+              title="Edit log"
+              style={{
+                width:32, height:32, borderRadius:8,
+                border:`1.5px solid ${C.border}`,
+                background:C.white, cursor:"pointer",
+                display:"flex", alignItems:"center", justifyContent:"center",
+                fontSize:14, color:C.textMid,
+                transition:"all 0.15s",
+              }}
+              onMouseEnter={e=>{e.currentTarget.style.borderColor=C.primary;e.currentTarget.style.color=C.primary;e.currentTarget.style.background=C.bgLight;}}
+              onMouseLeave={e=>{e.currentTarget.style.borderColor=C.border;e.currentTarget.style.color=C.textMid;e.currentTarget.style.background=C.white;}}
+            >
+              ✎
+            </button>
+            <button
+              onClick={() => onDelete(log)}
+              title="Delete log"
+              style={{
+                width:32, height:32, borderRadius:8,
+                border:"1.5px solid #FECACA",
+                background:C.white, cursor:"pointer",
+                display:"flex", alignItems:"center", justifyContent:"center",
+                fontSize:13, color:"#EF4444",
+                transition:"all 0.15s",
+              }}
+              onMouseEnter={e=>{e.currentTarget.style.background="#FEE2E2";e.currentTarget.style.borderColor="#F87171";}}
+              onMouseLeave={e=>{e.currentTarget.style.background=C.white;e.currentTarget.style.borderColor="#FECACA";}}
+            >
+              🗑
+            </button>
           </div>
         </div>
       ))}
@@ -304,7 +467,6 @@ function Slider({ label, value, onChange, min=1, max=10, left, right }) {
   );
 }
 
-// ─── Banner ───────────────────────────────────────────────────────────────────
 function Banner({ type, message, onClose }) {
   if (!message) return null;
   const s = {
@@ -321,7 +483,6 @@ function Banner({ type, message, onClose }) {
   );
 }
 
-// ─── Phase Banner ─────────────────────────────────────────────────────────────
 function PhaseBanner({ phase }) {
   const meta = PHASE_META[phase];
   if (!meta) return null;
@@ -329,39 +490,23 @@ function PhaseBanner({ phase }) {
     <div style={{background:meta.bg,border:`1.5px solid ${meta.border}`,borderRadius:16,padding:"16px 20px",display:"flex",alignItems:"flex-start",gap:14,marginBottom:16}}>
       <span style={{fontSize:26,lineHeight:1,flexShrink:0}}>{meta.icon}</span>
       <div>
-        <p style={{fontFamily:"'Nunito', sans-serif",fontSize:12,fontWeight:800,color:meta.color,textTransform:"uppercase",letterSpacing:"0.8px",marginBottom:4}}>
-          {phase} Phase
-        </p>
+        <p style={{fontFamily:"'Nunito', sans-serif",fontSize:12,fontWeight:800,color:meta.color,textTransform:"uppercase",letterSpacing:"0.8px",marginBottom:4}}>{phase} Phase</p>
         <p style={{fontFamily:"'Nunito', sans-serif",fontSize:13,color:C.textMid,lineHeight:1.65}}>{meta.tip}</p>
       </div>
-      <span style={{marginLeft:"auto",fontFamily:"'Nunito', sans-serif",fontSize:11,fontWeight:800,padding:"4px 12px",borderRadius:20,background:meta.color+"18",color:meta.color,border:`1px solid ${meta.color}30`,flexShrink:0,alignSelf:"flex-start"}}>
-        Today
-      </span>
+      <span style={{marginLeft:"auto",fontFamily:"'Nunito', sans-serif",fontSize:11,fontWeight:800,padding:"4px 12px",borderRadius:20,background:meta.color+"18",color:meta.color,border:`1px solid ${meta.color}30`,flexShrink:0,alignSelf:"flex-start"}}>Today</span>
     </div>
   );
 }
 
-// ─── New User Empty State ─────────────────────────────────────────────────────
 function NewUserWelcome({ onStartLogging }) {
   return (
-    <div style={{
-      background: C.white, borderRadius: 24, border: `1px solid ${C.border}`,
-      boxShadow: "0 2px 16px rgba(96,51,119,0.07)",
-      padding: "40px 24px", textAlign: "center", maxWidth: 480, margin: "0 auto",
-    }}>
-      <div style={{ fontSize: 52, marginBottom: 14 }}>🌸</div>
-      <h2 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 26, fontWeight: 700, color: C.textDark, marginBottom: 10 }}>
-        Welcome to Your Cycle Tracker
-      </h2>
-      <p style={{ fontFamily: "'Nunito', sans-serif", fontSize: 14, color: C.textSoft, lineHeight: 1.7, marginBottom: 24 }}>
+    <div style={{background:C.white,borderRadius:24,border:`1px solid ${C.border}`,boxShadow:"0 2px 16px rgba(96,51,119,0.07)",padding:"40px 24px",textAlign:"center",maxWidth:480,margin:"0 auto"}}>
+      <div style={{fontSize:52,marginBottom:14}}>🌸</div>
+      <h2 style={{fontFamily:"'Cormorant Garamond', serif",fontSize:26,fontWeight:700,color:C.textDark,marginBottom:10}}>Welcome to Your Cycle Tracker</h2>
+      <p style={{fontFamily:"'Nunito', sans-serif",fontSize:14,color:C.textSoft,lineHeight:1.7,marginBottom:24}}>
         Log your first period to unlock AI predictions, phase insights, fertile window tracking and your personal cycle history.
       </p>
-      <button onClick={onStartLogging} style={{
-        background: C.grad, color: "#fff", border: "none", borderRadius: 14,
-        padding: "14px 32px", fontFamily: "'Nunito', sans-serif", fontSize: 15,
-        fontWeight: 700, cursor: "pointer", boxShadow: `0 4px 20px ${C.primaryGlow}`,
-        width: "100%",
-      }}>
+      <button onClick={onStartLogging} style={{background:C.grad,color:"#fff",border:"none",borderRadius:14,padding:"14px 32px",fontFamily:"'Nunito', sans-serif",fontSize:15,fontWeight:700,cursor:"pointer",boxShadow:`0 4px 20px ${C.primaryGlow}`,width:"100%"}}>
         Log My First Period →
       </button>
     </div>
@@ -379,26 +524,32 @@ export default function CycleTrackerPage() {
   const [feedback,    setFeedback]    = useState({type:"",msg:""});
   const [showHistory, setShowHistory] = useState(true);
 
-  // API state
-  const [prediction,  setPrediction]  = useState(null);
-  const [calendar,    setCalendar]    = useState(null);
-  const [alerts,      setAlerts]      = useState([]);
-  const [insights,    setInsights]    = useState(null);
-  const [periodLogs,  setPeriodLogs]  = useState([]);
-  const [loading,     setLoading]     = useState(true);
+  // Edit / delete modal state
+  const [editingLog,   setEditingLog]   = useState(null); // log being edited
+  const [deletingLog,  setDeletingLog]  = useState(null); // log being deleted
+  const [histFeedback, setHistFeedback] = useState({type:"",msg:""});
 
-  // ── FIX: use Promise.allSettled so 403s for new users don't crash the page ──
-  useEffect(()=>{
-    Promise.allSettled([
+  // API state
+  const [prediction, setPrediction] = useState(null);
+  const [calendar,   setCalendar]   = useState(null);
+  const [alerts,     setAlerts]     = useState([]);
+  const [insights,   setInsights]   = useState(null);
+  const [periodLogs, setPeriodLogs] = useState([]);
+  const [loading,    setLoading]    = useState(true);
+
+  const refreshAll = async () => {
+    const [pred,cal,alrt,ins,logs] = await Promise.allSettled([
       getPrediction(), getCalendar(), getAlerts(), getPhaseInsights(), getPeriodLogs()
-    ]).then(([pred,cal,alrt,ins,logs])=>{
-      if(pred.status==="fulfilled")  setPrediction(pred.value ?? null);
-      if(cal.status==="fulfilled")   setCalendar(cal.value ?? null);
-      if(alrt.status==="fulfilled")  setAlerts(alrt.value || []);
-      if(ins.status==="fulfilled")   setInsights(ins.value ?? null);
-      if(logs.status==="fulfilled")  setPeriodLogs(logs.value || []);
-      // rejected = 403 / no data yet — state stays null, handled gracefully below
-    }).finally(()=>setLoading(false));
+    ]);
+    if(pred.status==="fulfilled")  setPrediction(pred.value  ?? null);
+    if(cal.status==="fulfilled")   setCalendar(cal.value     ?? null);
+    if(alrt.status==="fulfilled")  setAlerts(alrt.value      || []);
+    if(ins.status==="fulfilled")   setInsights(ins.value     ?? null);
+    if(logs.status==="fulfilled")  setPeriodLogs(logs.value  || []);
+  };
+
+  useEffect(()=>{
+    refreshAll().finally(()=>setLoading(false));
   },[]);
 
   const todayISO = useMemo(()=>{
@@ -406,15 +557,16 @@ export default function CycleTrackerPage() {
     return toISO(t.getFullYear(), t.getMonth(), t.getDate());
   },[]);
 
-  const pastPeriodDates = useMemo(()=>buildPastPeriodDates(periodLogs),[periodLogs]);
-  const isTodayPeriod   = pastPeriodDates.has(todayISO);
-  const currentPhase    = isTodayPeriod ? "Menstrual" : (calendar?.currentPhase ?? null);
-  const phaseColor      = {Menstrual:C.primary,Follicular:C.follicular,Fertile:C.fertile,Ovulation:C.ovulation,Luteal:C.luteal};
-  const phaseC          = phaseColor[currentPhase] || C.textMid;
+  const { map: pastPeriodMap, set: pastPeriodDates } = useMemo(()=>buildPastPeriodMap(periodLogs),[periodLogs]);
+  const isTodayPeriod = pastPeriodDates.has(todayISO);
+  const currentPhase  = isTodayPeriod ? "Menstrual" : (calendar?.currentPhase ?? null);
+  const phaseColor    = {Menstrual:C.primary,Follicular:C.follicular,Fertile:C.fertile,Ovulation:C.ovulation,Luteal:C.luteal};
+  const phaseC        = phaseColor[currentPhase] || C.textMid;
 
   const upd      = (k,v) => setLog(l=>({...l,[k]:v}));
   const toggleSx = s => upd("symptoms", log.symptoms.includes(s)?log.symptoms.filter(x=>x!==s):[...log.symptoms,s]);
 
+  // ── Save new log ──
   const save = async () => {
     if (!log.startDate) { setFeedback({type:"error",msg:"Please select your period start date on the calendar."}); return; }
     setSubmitting(true); setFeedback({type:"",msg:""});
@@ -425,21 +577,33 @@ export default function CycleTrackerPage() {
         sleepHours:log.sleep, stressLevel:log.stress, energyLevel:log.energy,
         symptoms:log.symptoms, notes:log.notes,
       });
-
       setSaved(true);
       setFeedback({type:"success",msg:"Log saved! AI predictions updated. 🌸"});
-      // Refresh — again use allSettled so a partial failure doesn't throw
-      const [pred,cal,alrt,logs] = await Promise.allSettled([
-        getPrediction(), getCalendar(), getAlerts(), getPeriodLogs()
-      ]);
-      if(pred.status==="fulfilled") setPrediction(pred.value ?? null);
-      if(cal.status==="fulfilled")  setCalendar(cal.value ?? null);
-      if(alrt.status==="fulfilled") setAlerts(alrt.value || []);
-      if(logs.status==="fulfilled") setPeriodLogs(logs.value || []);
+      await refreshAll();
       setTimeout(()=>{ setSaved(false); setFeedback({type:"",msg:""}); },3500);
     } catch(e) {
       setFeedback({type:"error",msg:e?.response?.data?.message||"Failed to save log."});
     } finally { setSubmitting(false); }
+  };
+
+  // ── Handle edit save ──
+  const handleEditSave = async (id, data) => {
+    await editPeriodLog(id, data);
+    await refreshAll();
+    setHistFeedback({type:"success", msg:"Period log updated successfully. 🌸"});
+    setTimeout(()=>setHistFeedback({type:"",msg:""}), 3000);
+  };
+
+  // ── Handle delete confirm ──
+  const handleDeleteConfirm = async (id) => {
+    try {
+      await deletePeriodLog(id);
+      await refreshAll();
+      setHistFeedback({type:"success", msg:"Period log deleted."});
+      setTimeout(()=>setHistFeedback({type:"",msg:""}), 3000);
+    } catch(e) {
+      setHistFeedback({type:"error", msg:e?.response?.data?.message||"Failed to delete log."});
+    }
   };
 
   const card = {
@@ -450,20 +614,29 @@ export default function CycleTrackerPage() {
     boxSizing: "border-box",
   };
 
-  // ── Determine if this is a brand new user (no data anywhere) ────────────────
   const isNewUser = !loading && !prediction && !calendar && periodLogs.length === 0;
 
   return (
     <AppShell current="tracker">
-      <div style={{
-        padding: isMobile ? "14px 12px" : "32px 36px",
-        maxWidth: 1060,
-        width: "100%",
-        boxSizing: "border-box",
-        overflowX: "hidden",
-      }}>
+      {/* Modals */}
+      {editingLog && (
+        <EditLogModal
+          log={editingLog}
+          onClose={()=>setEditingLog(null)}
+          onSave={handleEditSave}
+        />
+      )}
+      {deletingLog && (
+        <DeleteConfirmModal
+          log={deletingLog}
+          onClose={()=>setDeletingLog(null)}
+          onConfirm={handleDeleteConfirm}
+        />
+      )}
 
-        {/* ── Header ── */}
+      <div style={{padding:isMobile?"14px 12px":"32px 36px",maxWidth:1060,width:"100%",boxSizing:"border-box",overflowX:"hidden"}}>
+
+        {/* Header */}
         <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",marginBottom:isMobile?14:24,flexWrap:"wrap",gap:8}}>
           <div>
             <p style={{fontFamily:"'Nunito', sans-serif",fontSize:12,color:C.textSoft,marginBottom:3}}>
@@ -480,52 +653,36 @@ export default function CycleTrackerPage() {
           )}
         </div>
 
-        {/* ── Loading skeleton ── */}
         {loading && (
           <div style={{textAlign:"center",padding:"60px 0"}}>
             <p style={{fontFamily:"'Nunito', sans-serif",fontSize:14,color:C.textSoft}}>Loading your cycle data…</p>
           </div>
         )}
 
-        {/* ── New user welcome state — shown instead of all tabs ── */}
-        {!loading && isNewUser && tab !== "log" && (
-          <NewUserWelcome onStartLogging={() => setTab("log")} />
-        )}
+        {!loading && isNewUser && tab !== "log" && <NewUserWelcome onStartLogging={()=>setTab("log")}/>}
 
-        {/* Only render tabs + content once loading is done */}
         {!loading && (
           <>
-            {/* Phase banner */}
             {currentPhase && <PhaseBanner phase={currentPhase}/>}
-
-            {/* Health alerts */}
             {alerts.map((a,i)=>(
               <Banner key={i} type="info" message={`${a.type==="PERIOD"?"🩸":a.type==="OVULATION"?"🌿":"🌱"} ${a.message}`}/>
             ))}
 
-            {/* ── Tabs ── */}
-            <div style={{
-              display:"flex", gap:4,
-              background:C.bgLight, borderRadius:14, padding:4,
-              marginBottom: isMobile ? 16 : 28,
-              width: isMobile ? "100%" : "fit-content",
-              boxSizing: "border-box",
-            }}>
+            {/* Tabs */}
+            <div style={{display:"flex",gap:4,background:C.bgLight,borderRadius:14,padding:4,marginBottom:isMobile?16:28,width:isMobile?"100%":"fit-content",boxSizing:"border-box"}}>
               {[
-                ["log",         isMobile ? "📝 Log"     : "📝 Log Today"],
-                ["history",     isMobile ? "📅 History" : "📅 Cycle History"],
-                ["predictions", isMobile ? "🔮 Predict" : "🔮 Predictions"],
+                ["log",         isMobile?"📝 Log":"📝 Log Today"],
+                ["history",     isMobile?"📅 History":"📅 Cycle History"],
+                ["predictions", isMobile?"🔮 Predict":"🔮 Predictions"],
               ].map(([t,l])=>(
                 <button key={t} onClick={()=>setTab(t)} style={{
-                  flex: isMobile ? 1 : "none",
-                  padding: isMobile ? "9px 4px" : "10px 22px",
-                  borderRadius:10, border:"none",
+                  flex:isMobile?1:"none",
+                  padding:isMobile?"9px 4px":"10px 22px",
+                  borderRadius:10,border:"none",
                   background:tab===t?C.white:"transparent",
                   color:tab===t?C.textDark:C.textSoft,
-                  fontFamily:"'Nunito', sans-serif",
-                  fontSize: isMobile ? 11 : 13,
-                  fontWeight:700,
-                  cursor:"pointer", transition:"all 0.2s",
+                  fontFamily:"'Nunito', sans-serif",fontSize:isMobile?11:13,fontWeight:700,
+                  cursor:"pointer",transition:"all 0.2s",
                   boxShadow:tab===t?"0 2px 10px rgba(96,51,119,0.12)":"none",
                   whiteSpace:"nowrap",
                 }}>{l}</button>
@@ -534,32 +691,19 @@ export default function CycleTrackerPage() {
 
             {/* ══════ LOG TAB ══════ */}
             {tab==="log" && (
-              <div style={{
-                display:"grid",
-                gridTemplateColumns: isMobile ? "1fr" : "1fr 340px",
-                gap: 16,
-                alignItems:"start",
-              }}>
-                {/* ── Main form column ── */}
+              <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 340px",gap:16,alignItems:"start"}}>
                 <div style={{display:"flex",flexDirection:"column",gap:14}}>
                   <Banner type={feedback.type} message={feedback.msg} onClose={()=>setFeedback({type:"",msg:""})}/>
 
-                  {/* Calendar card */}
+                  {/* Calendar */}
                   <div style={card}>
                     <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",marginBottom:14,gap:8,flexWrap:"wrap"}}>
                       <div style={{flex:1,minWidth:0}}>
                         <h2 style={{fontFamily:"'Cormorant Garamond', serif",fontSize:isMobile?18:22,fontWeight:700,color:C.textDark,marginBottom:3}}>🩸 Select Period Dates</h2>
-                        <p style={{fontFamily:"'Nunito', sans-serif",fontSize:11,color:C.textSoft}}>Tap once for start · tap again for end · double-tap to remove</p>
+                        <p style={{fontFamily:"'Nunito', sans-serif",fontSize:11,color:C.textSoft}}>Tap once for start · tap again for end · hover past period to edit</p>
                       </div>
                       <div style={{display:"flex",alignItems:"center",gap:6,flexShrink:0}}>
-                        <button onClick={()=>setShowHistory(h=>!h)} style={{
-                          fontFamily:"'Nunito', sans-serif",fontSize:10,fontWeight:700,
-                          padding:"5px 10px",borderRadius:8,cursor:"pointer",transition:"all 0.2s",
-                          background:showHistory?C.bgLight:"transparent",
-                          color:showHistory?C.primaryDark:C.textSoft,
-                          border:`1.5px solid ${showHistory?C.primary:C.border}`,
-                          whiteSpace:"nowrap",
-                        }}>
+                        <button onClick={()=>setShowHistory(h=>!h)} style={{fontFamily:"'Nunito', sans-serif",fontSize:10,fontWeight:700,padding:"5px 10px",borderRadius:8,cursor:"pointer",transition:"all 0.2s",background:showHistory?C.bgLight:"transparent",color:showHistory?C.primaryDark:C.textSoft,border:`1.5px solid ${showHistory?C.primary:C.border}`,whiteSpace:"nowrap"}}>
                           {showHistory?"📅 On":"📅 Off"}
                         </button>
                         {(log.startDate||log.endDate)&&(
@@ -571,25 +715,23 @@ export default function CycleTrackerPage() {
                     </div>
 
                     <PeriodCalendar
-                      startDate={log.startDate}   endDate={log.endDate}
+                      startDate={log.startDate} endDate={log.endDate}
                       onStartDate={v=>upd("startDate",v)} onEndDate={v=>upd("endDate",v)}
+                      pastPeriodMap={pastPeriodMap}
                       pastPeriodDates={pastPeriodDates}
                       prediction={prediction}
                       showHistory={showHistory}
+                      onEditDay={setEditingLog}
                     />
 
                     <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginTop:14}}>
                       <div style={{background:log.startDate?C.bgLight:"#F9F9F9",borderRadius:12,padding:"12px 14px",border:`1.5px solid ${log.startDate?C.primary:C.border}`,transition:"all 0.2s"}}>
                         <p style={{fontFamily:"'Nunito', sans-serif",fontSize:10,fontWeight:800,color:C.textSoft,textTransform:"uppercase",letterSpacing:"0.8px",marginBottom:4}}>Period Start</p>
-                        <p style={{fontFamily:"'Cormorant Garamond', serif",fontSize:isMobile?16:20,fontWeight:700,color:log.startDate?C.primary:C.textSoft}}>
-                          {log.startDate?fmt(log.startDate):"Not selected"}
-                        </p>
+                        <p style={{fontFamily:"'Cormorant Garamond', serif",fontSize:isMobile?16:20,fontWeight:700,color:log.startDate?C.primary:C.textSoft}}>{log.startDate?fmt(log.startDate):"Not selected"}</p>
                       </div>
                       <div style={{background:log.endDate?C.bgLight:"#F9F9F9",borderRadius:12,padding:"12px 14px",border:`1.5px solid ${log.endDate?C.primary:C.border}`,transition:"all 0.2s"}}>
                         <p style={{fontFamily:"'Nunito', sans-serif",fontSize:10,fontWeight:800,color:C.textSoft,textTransform:"uppercase",letterSpacing:"0.8px",marginBottom:4}}>Period End</p>
-                        <p style={{fontFamily:"'Cormorant Garamond', serif",fontSize:isMobile?16:20,fontWeight:700,color:log.endDate?C.primary:C.textSoft}}>
-                          {log.endDate?fmt(log.endDate):"Tap another date"}
-                        </p>
+                        <p style={{fontFamily:"'Cormorant Garamond', serif",fontSize:isMobile?16:20,fontWeight:700,color:log.endDate?C.primary:C.textSoft}}>{log.endDate?fmt(log.endDate):"Tap another date"}</p>
                       </div>
                     </div>
                   </div>
@@ -599,15 +741,7 @@ export default function CycleTrackerPage() {
                     <h2 style={{fontFamily:"'Cormorant Garamond', serif",fontSize:isMobile?18:22,fontWeight:700,color:C.textDark,marginBottom:14}}>How are you feeling?</h2>
                     <div style={{display:"flex",gap:isMobile?5:8}}>
                       {MOODS.map(m=>(
-                        <button key={m.v} onClick={()=>upd("mood",m.v)} style={{
-                          flex:1, padding: isMobile?"11px 2px":"16px 6px",
-                          borderRadius:14,
-                          border:`2px solid ${log.mood===m.v?C.primary:C.border}`,
-                          background:log.mood===m.v?C.bgLight:C.white,
-                          cursor:"pointer",transition:"all 0.2s",
-                          display:"flex",flexDirection:"column",alignItems:"center",gap:6,
-                          boxShadow:log.mood===m.v?`0 4px 14px ${C.primaryGlow}`:"none",
-                        }}>
+                        <button key={m.v} onClick={()=>upd("mood",m.v)} style={{flex:1,padding:isMobile?"11px 2px":"16px 6px",borderRadius:14,border:`2px solid ${log.mood===m.v?C.primary:C.border}`,background:log.mood===m.v?C.bgLight:C.white,cursor:"pointer",transition:"all 0.2s",display:"flex",flexDirection:"column",alignItems:"center",gap:6,boxShadow:log.mood===m.v?`0 4px 14px ${C.primaryGlow}`:"none"}}>
                           <span style={{fontSize:isMobile?20:26}}>{m.e}</span>
                           <span style={{fontFamily:"'Nunito', sans-serif",fontSize:isMobile?9:11,fontWeight:700,color:log.mood===m.v?C.primary:C.textSoft}}>{m.l}</span>
                         </button>
@@ -622,17 +756,7 @@ export default function CycleTrackerPage() {
                       {FLOWS.map(f=>{
                         const sel=log.flow===f.v;
                         return (
-                          <button key={f.v} onClick={()=>upd("flow",f.v)} style={{
-                            flex:1, padding: isMobile?"10px 2px":"14px 6px",
-                            borderRadius:12,
-                            border:`2px solid ${sel?C.primary:C.border}`,
-                            background:sel?C.grad:C.white,
-                            color:sel?"#fff":C.textSoft,
-                            fontFamily:"'Nunito', sans-serif",fontSize:isMobile?9:12,fontWeight:700,
-                            cursor:"pointer",transition:"all 0.2s",
-                            display:"flex",flexDirection:"column",alignItems:"center",gap:5,
-                            boxShadow:sel?`0 4px 14px ${C.primaryGlow}`:"none",
-                          }}>
+                          <button key={f.v} onClick={()=>upd("flow",f.v)} style={{flex:1,padding:isMobile?"10px 2px":"14px 6px",borderRadius:12,border:`2px solid ${sel?C.primary:C.border}`,background:sel?C.grad:C.white,color:sel?"#fff":C.textSoft,fontFamily:"'Nunito', sans-serif",fontSize:isMobile?9:12,fontWeight:700,cursor:"pointer",transition:"all 0.2s",display:"flex",flexDirection:"column",alignItems:"center",gap:5,boxShadow:sel?`0 4px 14px ${C.primaryGlow}`:"none"}}>
                             <span style={{fontSize:isMobile?14:18}}>{f.icon}</span>
                             <span>{f.l}</span>
                           </button>
@@ -657,16 +781,7 @@ export default function CycleTrackerPage() {
                       {SYMPTOMS.map(s=>{
                         const sel=log.symptoms.includes(s);
                         return (
-                          <button key={s} onClick={()=>toggleSx(s)} style={{
-                            padding: isMobile?"7px 12px":"8px 16px",
-                            borderRadius:50,
-                            border:`2px solid ${sel?C.primary:C.border}`,
-                            background:sel?C.grad:C.white,
-                            color:sel?"#fff":C.textSoft,
-                            fontFamily:"'Nunito', sans-serif",fontSize:isMobile?12:13,fontWeight:600,
-                            cursor:"pointer",transition:"all 0.2s",
-                            boxShadow:sel?`0 2px 10px ${C.primaryGlow}`:"none",
-                          }}>{s}</button>
+                          <button key={s} onClick={()=>toggleSx(s)} style={{padding:isMobile?"7px 12px":"8px 16px",borderRadius:50,border:`2px solid ${sel?C.primary:C.border}`,background:sel?C.grad:C.white,color:sel?"#fff":C.textSoft,fontFamily:"'Nunito', sans-serif",fontSize:isMobile?12:13,fontWeight:600,cursor:"pointer",transition:"all 0.2s",boxShadow:sel?`0 2px 10px ${C.primaryGlow}`:"none"}}>{s}</button>
                         );
                       })}
                     </div>
@@ -675,26 +790,14 @@ export default function CycleTrackerPage() {
                   {/* Notes */}
                   <div style={card}>
                     <h2 style={{fontFamily:"'Cormorant Garamond', serif",fontSize:isMobile?18:22,fontWeight:700,color:C.textDark,marginBottom:12}}>Notes</h2>
-                    <textarea value={log.notes} onChange={e=>upd("notes",e.target.value)}
-                      placeholder="Anything else to remember about today..."
-                      rows={3} style={{width:"100%",border:`2px solid ${C.border}`,borderRadius:12,padding:"12px",fontFamily:"'Nunito', sans-serif",fontSize:14,color:C.textDark,resize:"none",outline:"none",transition:"border-color 0.2s",boxSizing:"border-box",background:C.sand}}
-                      onFocus={e=>e.target.style.borderColor=C.primary}
-                      onBlur={e=>e.target.style.borderColor=C.border}/>
+                    <textarea value={log.notes} onChange={e=>upd("notes",e.target.value)} placeholder="Anything else to remember about today..." rows={3} style={{width:"100%",border:`2px solid ${C.border}`,borderRadius:12,padding:"12px",fontFamily:"'Nunito', sans-serif",fontSize:14,color:C.textDark,resize:"none",outline:"none",transition:"border-color 0.2s",boxSizing:"border-box",background:C.sand}} onFocus={e=>e.target.style.borderColor=C.primary} onBlur={e=>e.target.style.borderColor=C.border}/>
                   </div>
 
-                  {/* ── Mobile: Save button + AI prediction card live here ── */}
                   {isMobile && (
                     <>
-                      <button onClick={save} disabled={submitting} style={{
-                        width:"100%", border:"none", borderRadius:14, padding:"16px",
-                        background:saved?"linear-gradient(135deg,#22C55E,#16A34A)":submitting?C.border:C.grad,
-                        color:"#fff", fontFamily:"'Nunito', sans-serif", fontSize:15, fontWeight:700,
-                        cursor:submitting?"not-allowed":"pointer", transition:"all 0.3s",
-                        boxShadow:saved?"0 4px 16px rgba(34,197,94,0.35)":`0 4px 20px ${C.primaryGlow}`,
-                      }}>
+                      <button onClick={save} disabled={submitting} style={{width:"100%",border:"none",borderRadius:14,padding:"16px",background:saved?"linear-gradient(135deg,#22C55E,#16A34A)":submitting?C.border:C.grad,color:"#fff",fontFamily:"'Nunito', sans-serif",fontSize:15,fontWeight:700,cursor:submitting?"not-allowed":"pointer",transition:"all 0.3s",boxShadow:saved?"0 4px 16px rgba(34,197,94,0.35)":`0 4px 20px ${C.primaryGlow}`}}>
                         {submitting?"Saving…":saved?"✓ Saved!":"Save Log →"}
                       </button>
-
                       <div style={{background:C.grad,borderRadius:20,padding:"18px",color:"#fff"}}>
                         <p style={{fontFamily:"'Nunito', sans-serif",fontSize:10,fontWeight:800,opacity:0.75,textTransform:"uppercase",letterSpacing:"1px",marginBottom:8}}>🔮 AI Prediction</p>
                         {prediction ? (
@@ -708,24 +811,19 @@ export default function CycleTrackerPage() {
                           <p style={{fontFamily:"'Nunito', sans-serif",fontSize:12,opacity:0.75,lineHeight:1.6}}>Log a period to get your first AI prediction.</p>
                         )}
                       </div>
-
                       {insights&&(
                         <div style={{...card,padding:"16px"}}>
                           <p style={{fontFamily:"'Nunito', sans-serif",fontSize:10,fontWeight:800,color:C.secondary,textTransform:"uppercase",letterSpacing:"1px",marginBottom:8}}>💡 Phase Insight</p>
-                          <p style={{fontFamily:"'Nunito', sans-serif",fontSize:12,color:C.textMid,lineHeight:1.65}}>
-                            {typeof insights==="string"?insights:insights?.tip||insights?.message||"—"}
-                          </p>
+                          <p style={{fontFamily:"'Nunito', sans-serif",fontSize:12,color:C.textMid,lineHeight:1.65}}>{typeof insights==="string"?insights:insights?.tip||insights?.message||"—"}</p>
                         </div>
                       )}
                     </>
                   )}
                 </div>
 
-                {/* ── Desktop sidebar ── */}
+                {/* Desktop sidebar */}
                 {!isMobile && (
                   <div style={{display:"flex",flexDirection:"column",gap:14,position:"sticky",top:24}}>
-
-                    {/* Summary card */}
                     <div style={{...card,padding:"22px"}}>
                       <h3 style={{fontFamily:"'Cormorant Garamond', serif",fontSize:20,fontWeight:700,color:C.textDark,marginBottom:14}}>Today's Summary</h3>
                       <div style={{background:log.startDate?C.bgLight:"#F9F9F9",borderRadius:12,padding:"12px 14px",marginBottom:12,border:`1px solid ${log.startDate?C.primary+"40":C.border}`}}>
@@ -757,18 +855,10 @@ export default function CycleTrackerPage() {
                           </div>
                         </div>
                       )}
-                      <button onClick={save} disabled={submitting} style={{
-                        width:"100%",border:"none",borderRadius:12,padding:"14px",
-                        background:saved?"linear-gradient(135deg,#22C55E,#16A34A)":submitting?C.border:C.grad,
-                        color:"#fff",fontFamily:"'Nunito', sans-serif",fontSize:14,fontWeight:700,
-                        cursor:submitting?"not-allowed":"pointer",transition:"all 0.3s",
-                        boxShadow:saved?"0 4px 16px rgba(34,197,94,0.35)":`0 4px 20px ${C.primaryGlow}`,
-                      }}>
+                      <button onClick={save} disabled={submitting} style={{width:"100%",border:"none",borderRadius:12,padding:"14px",background:saved?"linear-gradient(135deg,#22C55E,#16A34A)":submitting?C.border:C.grad,color:"#fff",fontFamily:"'Nunito', sans-serif",fontSize:14,fontWeight:700,cursor:submitting?"not-allowed":"pointer",transition:"all 0.3s",boxShadow:saved?"0 4px 16px rgba(34,197,94,0.35)":`0 4px 20px ${C.primaryGlow}`}}>
                         {submitting?"Saving…":saved?"✓ Saved!":"Save Log →"}
                       </button>
                     </div>
-
-                    {/* AI prediction */}
                     <div style={{background:C.grad,borderRadius:20,padding:"20px",color:"#fff"}}>
                       <p style={{fontFamily:"'Nunito', sans-serif",fontSize:10,fontWeight:800,opacity:0.75,textTransform:"uppercase",letterSpacing:"1px",marginBottom:10}}>🔮 AI Prediction</p>
                       {prediction ? (
@@ -782,14 +872,10 @@ export default function CycleTrackerPage() {
                         <p style={{fontFamily:"'Nunito', sans-serif",fontSize:12,opacity:0.75,lineHeight:1.6}}>Log a period to get your first AI prediction.</p>
                       )}
                     </div>
-
-                    {/* Phase insight */}
                     {insights&&(
                       <div style={{...card,padding:"18px"}}>
                         <p style={{fontFamily:"'Nunito', sans-serif",fontSize:10,fontWeight:800,color:C.secondary,textTransform:"uppercase",letterSpacing:"1px",marginBottom:8}}>💡 Phase Insight</p>
-                        <p style={{fontFamily:"'Nunito', sans-serif",fontSize:12,color:C.textMid,lineHeight:1.65}}>
-                          {typeof insights==="string"?insights:insights?.tip||insights?.message||"—"}
-                        </p>
+                        <p style={{fontFamily:"'Nunito', sans-serif",fontSize:12,color:C.textMid,lineHeight:1.65}}>{typeof insights==="string"?insights:insights?.tip||insights?.message||"—"}</p>
                       </div>
                     )}
                   </div>
@@ -800,34 +886,42 @@ export default function CycleTrackerPage() {
             {/* ══════ HISTORY TAB ══════ */}
             {tab==="history" && (
               periodLogs.length === 0 ? (
-                <NewUserWelcome onStartLogging={() => setTab("log")} />
+                <NewUserWelcome onStartLogging={()=>setTab("log")}/>
               ) : (
-                <div style={{
-                  display:"grid",
-                  gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr",
-                  gap:16, alignItems:"start",
-                }}>
+                <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:16,alignItems:"start"}}>
+                  {/* Calendar */}
                   <div style={card}>
                     <h2 style={{fontFamily:"'Cormorant Garamond', serif",fontSize:isMobile?18:22,fontWeight:700,color:C.textDark,marginBottom:4}}>Period Calendar</h2>
-                    <p style={{fontFamily:"'Nunito', sans-serif",fontSize:12,color:C.textSoft,marginBottom:16}}>Your logged period history visualised on the calendar</p>
+                    <p style={{fontFamily:"'Nunito', sans-serif",fontSize:12,color:C.textSoft,marginBottom:16}}>Hover over a period start date to edit it</p>
                     <PeriodCalendar
                       startDate={null} endDate={null}
                       onStartDate={()=>{}} onEndDate={()=>{}}
+                      pastPeriodMap={pastPeriodMap}
                       pastPeriodDates={pastPeriodDates}
                       prediction={prediction}
                       showHistory={true}
+                      onEditDay={setEditingLog}
                     />
                   </div>
+
+                  {/* List */}
                   <div style={card}>
                     <div style={{display:"flex",alignItems:"baseline",justifyContent:"space-between",marginBottom:16}}>
                       <div>
                         <h2 style={{fontFamily:"'Cormorant Garamond', serif",fontSize:isMobile?18:22,fontWeight:700,color:C.textDark,marginBottom:4}}>Past Periods</h2>
                         <p style={{fontFamily:"'Nunito', sans-serif",fontSize:12,color:C.textSoft}}>
-                          {[...new Map(periodLogs.map(l=>[l.startDate,l])).values()].length} cycle{[...new Map(periodLogs.map(l=>[l.startDate,l])).values()].length!==1?"s":""} logged
+                          {periodLogs.length} log{periodLogs.length!==1?"s":""} recorded
                         </p>
                       </div>
                     </div>
-                    <PastPeriodsList logs={periodLogs}/>
+
+                    <Banner type={histFeedback.type} message={histFeedback.msg} onClose={()=>setHistFeedback({type:"",msg:""})}/>
+
+                    <PastPeriodsList
+                      logs={periodLogs}
+                      onEdit={setEditingLog}
+                      onDelete={setDeletingLog}
+                    />
                   </div>
                 </div>
               )
@@ -835,11 +929,7 @@ export default function CycleTrackerPage() {
 
             {/* ══════ PREDICTIONS TAB ══════ */}
             {tab==="predictions" && (
-              <div style={{
-                display:"grid",
-                gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr",
-                gap:16,
-              }}>
+              <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:16}}>
                 <div style={card}>
                   <h2 style={{fontFamily:"'Cormorant Garamond', serif",fontSize:isMobile?20:24,fontWeight:700,color:C.textDark,marginBottom:20}}>🔮 Upcoming Predictions</h2>
                   {!prediction ? (
@@ -853,8 +943,7 @@ export default function CycleTrackerPage() {
                         {l:"Next Period",    d:fmtRange(prediction.predictedStartDate,prediction.predictedEndDate), c:C.primary},
                         {l:"Fertile Window", d:fmtRange(prediction.fertileStart,prediction.fertileEnd),             c:C.fertile},
                         {l:"Ovulation Day",  d:fmt(prediction.ovulationDay),                                       c:C.ovulation},
-                        // ── FIX: safe-access calendar fields — null when new user ──
-                        {l:"PMS Window",     d:calendar ? fmtRange(calendar.pmsStart, calendar.pmsEnd) : "—",      c:C.luteal},
+                        {l:"PMS Window",     d:calendar?fmtRange(calendar.pmsStart,calendar.pmsEnd):"—",           c:C.luteal},
                       ].map(p=>(
                         <div key={p.l} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"14px 0",borderBottom:`1px solid ${C.bgLight}`}}>
                           <div>
@@ -867,20 +956,15 @@ export default function CycleTrackerPage() {
                     </div>
                   )}
                 </div>
-
                 <div style={card}>
                   <h2 style={{fontFamily:"'Cormorant Garamond', serif",fontSize:isMobile?20:24,fontWeight:700,color:C.textDark,marginBottom:16}}>📈 Cycle Analysis</h2>
-                  {/* ── FIX: guard calendar before reading .nextPeriodStart / .ovulationDay ── */}
                   {calendar ? (
                     <div style={{display:"flex",flexDirection:"column",gap:12}}>
                       <div style={{background:"#F0FDF4",borderRadius:14,padding:"16px",border:"1px solid #BBF7D0"}}>
-                        <p style={{fontFamily:"'Nunito', sans-serif",fontSize:13,fontWeight:700,color:"#16A34A"}}>
-                          ✓ Current Phase: {currentPhase || calendar.currentPhase}
-                        </p>
+                        <p style={{fontFamily:"'Nunito', sans-serif",fontSize:13,fontWeight:700,color:"#16A34A"}}>✓ Current Phase: {currentPhase||calendar.currentPhase}</p>
                         <p style={{fontFamily:"'Nunito', sans-serif",fontSize:12,color:C.textSoft,marginTop:4,lineHeight:1.6}}>
-                          {/* ── FIX: safe-access both fields — were crashing for new users ── */}
-                          Next period starts {fmt(calendar.nextPeriodStart ?? null)}.{" "}
-                          {calendar.ovulationDay ? `Ovulation on ${fmt(calendar.ovulationDay)}.` : ""}
+                          Next period starts {fmt(calendar.nextPeriodStart??null)}.{" "}
+                          {calendar.ovulationDay?`Ovulation on ${fmt(calendar.ovulationDay)}.`:""}
                         </p>
                       </div>
                       {prediction&&(
@@ -900,11 +984,8 @@ export default function CycleTrackerPage() {
                       )}
                     </div>
                   ) : (
-                    // ── FIX: was crashing here when calendar was null for new users ──
                     <div style={{background:C.bgLight,borderRadius:14,padding:"24px",textAlign:"center"}}>
-                      <p style={{fontFamily:"'Nunito', sans-serif",fontSize:13,color:C.textSoft,marginBottom:14}}>
-                        Cycle analysis will appear here after you log your first period.
-                      </p>
+                      <p style={{fontFamily:"'Nunito', sans-serif",fontSize:13,color:C.textSoft,marginBottom:14}}>Cycle analysis will appear after you log your first period.</p>
                       <button onClick={()=>setTab("log")} style={{background:C.grad,color:"#fff",border:"none",borderRadius:10,padding:"10px 20px",fontFamily:"'Nunito', sans-serif",fontSize:13,fontWeight:700,cursor:"pointer",width:isMobile?"100%":"auto"}}>→ Log Today</button>
                     </div>
                   )}
@@ -913,7 +994,6 @@ export default function CycleTrackerPage() {
             )}
           </>
         )}
-
       </div>
     </AppShell>
   );
