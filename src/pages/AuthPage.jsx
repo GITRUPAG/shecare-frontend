@@ -1,4 +1,5 @@
 import { useState } from "react";
+import logoSrc from "../assets/logo.png";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { signInWithPopup } from "firebase/auth";
@@ -170,7 +171,7 @@ function GoogleButton({ onSuccess, onError }) {
 }
 
 function LoginForm() {
-  const navigate = useNavigate(); // ✅ already have navigate
+  const navigate = useNavigate();
   const { login } = useAuth();
   const [id, setId]             = useState("");
   const [pwd, setPwd]           = useState("");
@@ -206,7 +207,6 @@ function LoginForm() {
             style={{ accentColor: C.pink, width: 15, height: 15 }} />
           <span style={{ fontFamily: "'Nunito', sans-serif", fontSize: 13, color: C.textSoft }}>Keep me signed in</span>
         </label>
-        {/* ✅ NOW navigates to /forgot-password */}
         <button
           onClick={() => navigate("/forgot-password")}
           style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "'Nunito', sans-serif", fontSize: 13, fontWeight: 700, color: C.pink }}>
@@ -292,6 +292,23 @@ function RegisterForm() {
   );
 }
 
+function LogoImage({ size = 40 }) {
+  return (
+    <img
+      src={logoSrc}
+      alt="SheCare"
+      style={{
+        width: size,
+        height: size,
+        objectFit: "cover",
+        objectPosition: "center",
+        filter: "drop-shadow(0 2px 6px rgba(216,94,130,0.30))",
+        display: "block",
+      }}
+    />
+  );
+}
+
 function LeftPanel() {
   return (
     <div style={{
@@ -306,7 +323,9 @@ function LeftPanel() {
       <div style={{ position: "absolute", top: 36, right: 6, width: 200, height: 200, borderRadius: "50%", border: "1px solid rgba(216,94,130,0.08)", pointerEvents: "none" }} />
       <div style={{ position: "absolute", bottom: 90, left: 30, width: 90, height: 90, borderRadius: "50%", border: "1px solid rgba(176,102,192,0.18)", pointerEvents: "none" }} />
       <div style={{ position: "relative", zIndex: 3, display: "flex", alignItems: "center", gap: 12 }}>
-        <div style={{ width: 40, height: 40, borderRadius: "50%", background: "rgba(255,255,255,0.55)", border: "1px solid rgba(216,94,130,0.25)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20 }}>🌸</div>
+        <div style={{ width: 52, height: 52, borderRadius: "50%", background: "rgba(255,255,255,0.80)", border: "2px solid rgba(216,94,130,0.35)", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", boxShadow: "0 4px 16px rgba(216,94,130,0.18)" }}>
+          <LogoImage size={52} />
+        </div>
         <span style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 24, fontWeight: 700, color: C.pinkDark }}>SheCare</span>
       </div>
       <div style={{ position: "relative", zIndex: 3, flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", paddingBottom: 24 }}>
@@ -372,8 +391,9 @@ export default function AuthPage() {
       <div className="auth-left"><LeftPanel /></div>
       <div className="auth-right" style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: "48px 56px", overflowY: "auto" }}>
         <div style={{ width: "100%", maxWidth: 440 }}>
+          {/* Mobile logo */}
           <button onClick={() => navigate("/")} className="mobile-logo" style={{ display: "none", alignItems: "center", gap: 10, background: "none", border: "none", cursor: "pointer", marginBottom: 36 }}>
-            <span style={{ fontSize: 24 }}>🌸</span>
+            <LogoImage size={42} />
             <span style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 24, fontWeight: 700, color: C.pinkDark }}>SheCare</span>
           </button>
           <button onClick={() => navigate("/")}
@@ -384,7 +404,10 @@ export default function AuthPage() {
           </button>
           <div style={{ marginBottom: 28 }}>
             <h1 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 40, fontWeight: 700, lineHeight: 1.1, color: C.textDark, marginBottom: 8, letterSpacing: "-0.5px" }}>
-              {tab === "login" ? "Welcome back" : "Join SheCare"}<span style={{ color: C.pink }}> 🌸</span>
+              {tab === "login" ? "Welcome back" : "Join SheCare"}
+              <span style={{ display: "inline-flex", verticalAlign: "middle", marginLeft: 10 }}>
+                <LogoImage size={52} />
+              </span>
             </h1>
             <p style={{ fontFamily: "'Nunito', sans-serif", fontSize: 15, color: C.textSoft, lineHeight: 1.6 }}>
               {tab === "login" ? "Sign in to continue your wellness journey." : "Create your free account and start tracking today."}
