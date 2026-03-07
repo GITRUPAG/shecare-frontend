@@ -12,6 +12,15 @@ const C = {
 
 const DAYS   = ["M","T","W","T","F","S","S"];
 const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+const displayName = user?.name || user?.username || "there";
+
+const getGreeting = () => {
+  const hour = new Date().getHours();
+  if (hour < 12) return "Good morning ☀️";
+  if (hour < 17) return "Good afternoon 🌤️";
+  if (hour < 21) return "Good evening 🌙";
+  return "Good night 🌟";
+};
 
 function getOffset(y, m) { const d = new Date(y, m, 1).getDay(); return d === 0 ? 6 : d - 1; }
 function fmt(dateStr) { if (!dateStr) return "—"; return new Date(dateStr).toLocaleDateString("en-IN", { day:"numeric", month:"short" }); }
@@ -200,7 +209,7 @@ export default function DashboardPage() {
         {/* Header */}
         <div className="db-header">
           <div>
-            <p>Good morning ✨</p>
+            <p>{getGreeting()}</p>
             <h1>Welcome back, {displayName}</h1>
           </div>
           <button className="db-log-btn" onClick={() => navigate("/tracker")}>+ Log Today</button>
