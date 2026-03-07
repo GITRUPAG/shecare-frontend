@@ -61,3 +61,5 @@ export const getPeriodPrediction = async () => {
 
 export const editPeriodLog    = (id, data)   => API.put(`/period/log/${id}`, data).then(r => r.data);
 export const deletePeriodLog  = (id)         => API.delete(`/period/log/${id}`).then(r => r.data);
+
+export const savePcosSymptoms = async (data)  => (await API.post("/period/pcos/symptoms", data)).data;

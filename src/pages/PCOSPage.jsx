@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { AppShell } from "../components/Layout";
-import { predictPCOS } from "../api/periodService";
+import { predictPCOS, savePcosSymptoms } from "../api/periodService";
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
 const C = {
@@ -45,10 +45,10 @@ const resolveRisk = (apiRes) => {
 
 // ─── Symptom questions (yes/no) ───────────────────────────────────────────────
 const SYMPTOMS = [
-  { key: "weight_gain",    icon: "⚖️", label: "Unexplained weight gain",       hint: "Gained weight without a clear dietary change" },
-  { key: "hair_growth",    icon: "🌿", label: "Excess facial / body hair",      hint: "Hair on face, chest or back beyond what's normal for you" },
-  { key: "skin_darkening", icon: "🩺", label: "Dark skin patches",             hint: "Darkening on neck, armpits or groin (acanthosis nigricans)" },
-  { key: "pimples",        icon: "✨", label: "Persistent acne or oily skin",   hint: "Hormonal acne, especially along the chin and jaw" },
+  { key: "weight_gain",    icon: "⚖️", label: "Unexplained weight gain",      hint: "Gained weight without a clear dietary change" },
+  { key: "hair_growth",    icon: "🌿", label: "Excess facial / body hair",     hint: "Hair on face, chest or back beyond what's normal for you" },
+  { key: "skin_darkening", icon: "🩺", label: "Dark skin patches",            hint: "Darkening on neck, armpits or groin (acanthosis nigricans)" },
+  { key: "pimples",        icon: "✨", label: "Persistent acne or oily skin",  hint: "Hormonal acne, especially along the chin and jaw" },
 ];
 
 // ─── Responsive hook ──────────────────────────────────────────────────────────
@@ -62,7 +62,7 @@ function useIsMobile() {
   return isMobile;
 }
 
-// ─── Tiny helpers ─────────────────────────────────────────────────────────────
+// ─── Card ─────────────────────────────────────────────────────────────────────
 function Card({ children, style = {} }) {
   return (
     <div style={{
@@ -78,6 +78,7 @@ function Card({ children, style = {} }) {
   );
 }
 
+// ─── Pill ─────────────────────────────────────────────────────────────────────
 function Pill({ children, color = C.primary, bg = C.bgLight }) {
   return (
     <span style={{
@@ -90,6 +91,7 @@ function Pill({ children, color = C.primary, bg = C.bgLight }) {
   );
 }
 
+// ─── Spinner ──────────────────────────────────────────────────────────────────
 function Spinner({ label = "Loading…" }) {
   return (
     <div style={{ textAlign: "center", padding: "60px 0" }}>
@@ -151,7 +153,8 @@ function ResultPanel({ result, isAuto, onRefine, onRetake, showRefineBtn }) {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-      {/* Hero */}
+
+      {/* ── Hero ── */}
       <div style={{
         background: risk.bg,
         border: `2px solid ${risk.border}`,
@@ -165,9 +168,7 @@ function ResultPanel({ result, isAuto, onRefine, onRetake, showRefineBtn }) {
               <p style={{ fontFamily: "'Nunito', sans-serif", fontSize: 11, fontWeight: 800, color: C.textSoft, textTransform: "uppercase", letterSpacing: "1.2px" }}>
                 PCOS Risk Assessment
               </p>
-              {isAuto && (
-                <Pill color={C.secondary} bg="#F5F3FF">⚡ Auto-assessed</Pill>
-              )}
+              {isAuto && <Pill color={C.secondary} bg="#F5F3FF">⚡ Auto-assessed</Pill>}
             </div>
             <h2 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: isMobile ? 32 : 42, fontWeight: 700, color: risk.text, lineHeight: 1, marginBottom: 10 }}>
               {risk.label}
@@ -190,19 +191,14 @@ function ResultPanel({ result, isAuto, onRefine, onRetake, showRefineBtn }) {
         </div>
       </div>
 
-      {/* Recommendation + Risk Factors */}
-      <div style={{
-        display: "grid",
-        gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr",
-        gap: 16,
-      }}>
+      {/* ── Recommendation + Risk Factors ── */}
+      <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 16 }}>
         {rec && (
           <Card>
             <h3 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 20, fontWeight: 700, color: C.textDark, marginBottom: 14 }}>📋 Recommendation</h3>
             <p style={{ fontFamily: "'Nunito', sans-serif", fontSize: 13, color: C.textMid, lineHeight: 1.8 }}>{rec}</p>
           </Card>
         )}
-
         {factors.length > 0 && (
           <Card>
             <h3 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 20, fontWeight: 700, color: C.textDark, marginBottom: 14 }}>🔍 Top Risk Factors</h3>
@@ -218,7 +214,7 @@ function ResultPanel({ result, isAuto, onRefine, onRetake, showRefineBtn }) {
         )}
       </div>
 
-      {/* Disclaimer */}
+      {/* ── Disclaimer ── */}
       {result?.disclaimer && (
         <div style={{ background: "#F8F8FA", borderRadius: 14, padding: "14px 18px", border: "1px solid #E8E8EF", boxSizing: "border-box" }}>
           <p style={{ fontFamily: "'Nunito', sans-serif", fontSize: 12, color: "#888", lineHeight: 1.7 }}>
@@ -227,7 +223,7 @@ function ResultPanel({ result, isAuto, onRefine, onRetake, showRefineBtn }) {
         </div>
       )}
 
-      {/* Actions */}
+      {/* ── Actions ── */}
       <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
         {showRefineBtn && (
           <button onClick={onRefine} style={{
@@ -242,7 +238,8 @@ function ResultPanel({ result, isAuto, onRefine, onRetake, showRefineBtn }) {
         <button onClick={onRetake} style={{
           flex: isMobile ? 1 : "none",
           border: `2px solid ${C.border}`, borderRadius: 12, padding: "13px 24px",
-          background: C.white, fontFamily: "'Nunito', sans-serif", fontSize: 14, fontWeight: 700, color: C.textSoft, cursor: "pointer",
+          background: C.white, fontFamily: "'Nunito', sans-serif", fontSize: 14, fontWeight: 700,
+          color: C.textSoft, cursor: "pointer",
         }}>
           🔄 Re-assess
         </button>
@@ -251,61 +248,33 @@ function ResultPanel({ result, isAuto, onRefine, onRetake, showRefineBtn }) {
   );
 }
 
-// ─── Actionable error banner ──────────────────────────────────────────────────
+// ─── Data required banner ─────────────────────────────────────────────────────
 function DataRequiredBanner({ message, onGoToProfile, onGoToTracker }) {
   return (
     <div style={{
-      background: "#FFFBEB",
-      border: "1.5px solid #FCD34D",
-      borderRadius: 18,
-      padding: "20px 22px",
-      marginBottom: 20,
+      background: "#FFFBEB", border: "1.5px solid #FCD34D",
+      borderRadius: 18, padding: "20px 22px", marginBottom: 20,
       boxSizing: "border-box",
     }}>
-      <p style={{
-        fontFamily: "'Nunito', sans-serif", fontSize: 14, fontWeight: 800,
-        color: "#92400E", marginBottom: 12,
-      }}>
+      <p style={{ fontFamily: "'Nunito', sans-serif", fontSize: 14, fontWeight: 800, color: "#92400E", marginBottom: 12 }}>
         ⚠️ {message}
       </p>
-
-      <p style={{
-        fontFamily: "'Nunito', sans-serif", fontSize: 13, fontWeight: 700,
-        color: "#78350F", marginBottom: 10,
-      }}>
+      <p style={{ fontFamily: "'Nunito', sans-serif", fontSize: 13, fontWeight: 700, color: "#78350F", marginBottom: 10 }}>
         To run PCOS risk assessment, please:
       </p>
-
       <ul style={{ margin: "0 0 18px 0", padding: "0 0 0 4px", listStyle: "none" }}>
-        {[
-          "Add your age, height, and weight in Profile",
-          "Log at least one period cycle",
-        ].map((item) => (
-          <li key={item} style={{
-            display: "flex", alignItems: "flex-start", gap: 8,
-            marginBottom: 7,
-            fontFamily: "'Nunito', sans-serif", fontSize: 13, color: "#92400E", lineHeight: 1.55,
-          }}>
+        {["Add your age, height, and weight in Profile", "Log at least one period cycle"].map(item => (
+          <li key={item} style={{ display: "flex", alignItems: "flex-start", gap: 8, marginBottom: 7, fontFamily: "'Nunito', sans-serif", fontSize: 13, color: "#92400E", lineHeight: 1.55 }}>
             <span style={{ color: "#D97706", marginTop: 1 }}>•</span>
             {item}
           </li>
         ))}
       </ul>
-
       <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-        <button onClick={onGoToProfile} style={{
-          background: C.grad, color: C.white, border: "none", borderRadius: 10,
-          padding: "10px 20px", fontFamily: "'Nunito', sans-serif", fontSize: 13, fontWeight: 700,
-          cursor: "pointer", boxShadow: `0 4px 14px ${C.primaryGlow}`,
-        }}>
+        <button onClick={onGoToProfile} style={{ background: C.grad, color: C.white, border: "none", borderRadius: 10, padding: "10px 20px", fontFamily: "'Nunito', sans-serif", fontSize: 13, fontWeight: 700, cursor: "pointer", boxShadow: `0 4px 14px ${C.primaryGlow}` }}>
           👤 Complete Profile
         </button>
-        <button onClick={onGoToTracker} style={{
-          background: C.white, color: C.textMid,
-          border: `2px solid ${C.border}`, borderRadius: 10,
-          padding: "10px 20px", fontFamily: "'Nunito', sans-serif", fontSize: 13, fontWeight: 700,
-          cursor: "pointer",
-        }}>
+        <button onClick={onGoToTracker} style={{ background: C.white, color: C.textMid, border: `2px solid ${C.border}`, borderRadius: 10, padding: "10px 20px", fontFamily: "'Nunito', sans-serif", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
           🩸 Log Period
         </button>
       </div>
@@ -313,7 +282,7 @@ function DataRequiredBanner({ message, onGoToProfile, onGoToTracker }) {
   );
 }
 
-// ─── PCOSPage ─────────────────────────────────────────────────────────────────
+// ─── Main page ────────────────────────────────────────────────────────────────
 export default function PCOSPage() {
   const isMobile = useIsMobile();
   const navigate = useNavigate();
@@ -321,13 +290,16 @@ export default function PCOSPage() {
   const [view,         setView]         = useState("loading");
   const [autoResult,   setAutoResult]   = useState(null);
   const [manualResult, setManualResult] = useState(null);
-  const [symptoms,     setSymptoms]     = useState({ weight_gain: 0, hair_growth: 0, skin_darkening: 0, pimples: 0 });
-  const [error,        setError]        = useState("");
-  const [autoError,    setAutoError]    = useState("");
+  const [symptoms,     setSymptoms]     = useState({
+    weight_gain: 0, hair_growth: 0, skin_darkening: 0, pimples: 0,
+  });
+  const [error,     setError]     = useState("");
+  const [autoError, setAutoError] = useState("");
 
   const shownResult = manualResult ?? autoResult;
   const isAutoShown = !manualResult && !!autoResult;
 
+  // ── Auto-assess on mount ──
   useEffect(() => {
     (async () => {
       try {
@@ -335,29 +307,38 @@ export default function PCOSPage() {
         setAutoResult(res);
         setView("result");
       } catch (err) {
-        const msg =
+        setAutoError(
           err?.response?.data?.message ||
-          "We need more health data before running this assessment.";
-
-        setAutoError(msg);
+          "We need more health data before running this assessment."
+        );
         setView("landing");
       }
     })();
   }, []);
 
+  // ── Submit symptoms → save → predict ──
   const submitRefinement = async () => {
     setView("submitting");
     setError("");
     try {
+      // Step 1: save user symptoms to profile (POST /period/pcos/symptoms)
+      await savePcosSymptoms({
+        weightGain:    symptoms.weight_gain,
+        hairGrowth:    symptoms.hair_growth,
+        skinDarkening: symptoms.skin_darkening,
+        pimples:       symptoms.pimples,
+      });
+      // Step 2: run prediction — GET /period/pcos now uses the saved symptoms
       const res = await predictPCOS();
       setManualResult(res);
       setView("result");
     } catch (e) {
-      setError("Could not submit. Please try again.");
+      setError(e?.response?.data?.message || "Could not submit. Please try again.");
       setView("refine");
     }
   };
 
+  // ── Re-assess: clear results, go back to symptom form ──
   const retake = () => {
     setManualResult(null);
     setAutoResult(null);
@@ -369,8 +350,8 @@ export default function PCOSPage() {
     <AppShell current="pcos">
       <div style={{
         padding: isMobile ? "16px 12px" : "32px 36px",
-        maxWidth: 900,
-        width: "100%", boxSizing: "border-box", overflowX: "hidden",
+        maxWidth: 900, width: "100%",
+        boxSizing: "border-box", overflowX: "hidden",
       }}>
 
         {/* Page header */}
@@ -392,11 +373,7 @@ export default function PCOSPage() {
 
         {/* ── Landing ── */}
         {view === "landing" && (
-          <div style={{
-            display: "grid",
-            gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr",
-            gap: 20,
-          }}>
+          <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 20 }}>
             <Card>
               <div style={{ fontSize: 52, marginBottom: 18 }}>🧬</div>
               <h2 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: isMobile ? 24 : 28, fontWeight: 700, color: C.textDark, marginBottom: 10 }}>What is PCOS?</h2>
@@ -404,7 +381,6 @@ export default function PCOSPage() {
                 Polycystic Ovary Syndrome affects 1 in 10 women of reproductive age. Our ML model can give you an instant risk profile based on a few simple questions.
               </p>
 
-              {/* ── Actionable error banner replaces the old plain text warning ── */}
               {autoError && (
                 <DataRequiredBanner
                   message={autoError}
@@ -425,7 +401,15 @@ export default function PCOSPage() {
             <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
               <Card>
                 <h3 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 20, fontWeight: 700, color: C.textDark, marginBottom: 14 }}>Common PCOS Signs</h3>
-                {["Irregular or missed periods", "Excess hair growth (hirsutism)", "Acne or oily skin", "Scalp hair thinning", "Unexplained weight gain", "Difficulty getting pregnant", "Dark patches on skin folds"].map(s => (
+                {[
+                  "Irregular or missed periods",
+                  "Excess hair growth (hirsutism)",
+                  "Acne or oily skin",
+                  "Scalp hair thinning",
+                  "Unexplained weight gain",
+                  "Difficulty getting pregnant",
+                  "Dark patches on skin folds",
+                ].map(s => (
                   <div key={s} style={{ display: "flex", alignItems: "flex-start", gap: 8, marginBottom: 8 }}>
                     <span style={{ color: C.primary, marginTop: 2, fontSize: 14 }}>✦</span>
                     <span style={{ fontFamily: "'Nunito', sans-serif", fontSize: 13, color: C.textMid, lineHeight: 1.5 }}>{s}</span>
@@ -465,7 +449,6 @@ export default function PCOSPage() {
                 </div>
               </div>
             )}
-
             <ResultPanel
               result={shownResult}
               isAuto={isAutoShown}
@@ -566,6 +549,7 @@ export default function PCOSPage() {
             </button>
           </div>
         )}
+
       </div>
     </AppShell>
   );
