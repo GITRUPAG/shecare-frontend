@@ -12,7 +12,9 @@ const C = {
   border:    "#E8D0F0",
 };
 
-const API_BASE = "https://shecare-backend-1061624847334.asia-south1.run.app";
+//const API_BASE = "https://shecare-backend-1061624847334.asia-south1.run.app";
+const API_BASE = "https://shecare-backend-flui.onrender.com";
+
 
 export default function ForgotPasswordPage() {
   const navigate = useNavigate();
