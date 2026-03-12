@@ -357,7 +357,7 @@ function LeftPanel() {
           ))}
         </div>
         <div style={{ display: "flex", gap: 10 }}>
-          {[["94%", "Accuracy"], ["12K+", "Women"], ["< 3min", "Screening"]].map(([v, l]) => (
+          {[["94%", "Accuracy"], ["1K+", "Women"], ["< 3min", "Screening"]].map(([v, l]) => (
             <div key={l} style={{ flex: 1, textAlign: "center", background: "rgba(255,255,255,0.50)", borderRadius: 14, padding: "14px 6px", border: "1px solid rgba(216,94,130,0.14)" }}>
               <p style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 26, fontWeight: 700, color: C.pink, lineHeight: 1, margin: "0 0 3px" }}>{v}</p>
               <p style={{ fontFamily: "'Nunito', sans-serif", fontSize: 10, color: C.textSoft, margin: 0 }}>{l}</p>
